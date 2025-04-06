@@ -1,4 +1,5 @@
 ---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 // Get the slug from the URL
 const { slug } = Astro.params;
 
@@ -14,6 +15,6 @@ export function getStaticPaths() {
 }
 ---
 
-<main>
-  <h1>{name}</h1>
-</main> 
+<StarlightPage frontmatter={{ title: name }}>
+
+</StarlightPage> 

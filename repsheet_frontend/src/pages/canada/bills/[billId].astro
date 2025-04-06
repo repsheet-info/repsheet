@@ -1,9 +1,11 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-
+import IssueSummary from '../../../components/IssueSummary.astro';
+import Stack from '../../../components/Stack.astro';
 import db from '../../../utils/db';
 import { assertIsBill, assertIsBillSummary } from '../../../types/guards';
 import type { Bill } from '../../../types/db';
+import { issueName } from '../../../utils/issues-name';
 
 // Get the slug from the URL
 const { billId } = Astro.params;
@@ -25,6 +27,16 @@ export function getStaticPaths() {
     params: { billId: bill["Bill ID"] },
   }));
 }
+
+const issues = Object.keys(summary.issues).filter((issue) => summary.issues[issue as keyof typeof summary.issues] !== null);
 ---
 
 <StarlightPage frontmatter={{ title: name }}>
+  {summary.summary.split("\n").map((line) => <p>{line}</p>)}
+  <h2>Issues</h2>
+  <Stack>
+    {issues.map((issue) => (
+      <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary.issues[issue as keyof typeof summary.issues] as string} /></li>
+    ))}
+  </Stack>
+</StarlightPage>

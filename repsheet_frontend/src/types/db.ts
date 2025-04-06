@@ -20,13 +20,13 @@ export interface BillSummary {
   summary: string;
   sponsor: string[];
   issues: {
-    climateAndEnergy?: string;
-    affordabilityAndHousing?: string;
-    defense?: string;
-    healthcare?: string;
-    immigration?: string;
-    infrastructure?: string;
-    spendingAndTaxation?: string;
-    indigenousRelations?: string;
+    climateAndEnergy: string | null;
+    affordabilityAndHousing: string | null;
+    defense: string | null;
+    healthcare: string | null;
+    immigration: string | null;
+    infrastructure: string | null;
+    spendingAndTaxation: string | null;
+    indigenousRelations: string | null;
   };
 }

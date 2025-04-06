@@ -3,7 +3,7 @@ from os import path
 import pandas as pd
 import sqlite3
 from contextlib import contextmanager
-from typing import Optional
+from typing import NamedTuple, Optional
 import re
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -25,6 +25,7 @@ PARLIMENTARY_SESSIONS = (
 
 DATA_DIR = "repsheet_backend/data"
 EXPORT_DB = "repsheet.sqlite"
+GCP_BILLING_PROJECT = "repsheet-app-prod"
 
 VOTES_HELD_TABLE = "votes_held"
 BILLS_TABLE = "bills"
@@ -32,6 +33,11 @@ MEMBER_VOTES_TABLE = "member_votes"
 MEMBERS_TABLE = "members"
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+class BillId(NamedTuple):
+    parliament: int
+    session: int
+    bill_number: str
 
 @contextmanager
 def db_connect():
@@ -63,7 +69,8 @@ def download_all_bill_texts(parliament, session, bill_number):
             filepath = path.join(bill_dir, filename)
             if path.exists(filepath):
                 # empty file indicates that the file was not found
-                found = path.getsize(filepath) > 0
+                if path.getsize(filepath) > 0:
+                    found = True
                 continue
             for bill_type in ("Private", "Government"):
                 url = f"https://www.parl.ca/Content/Bills/{parliament}{session}/{bill_type}/{bill_number}/{filename}"

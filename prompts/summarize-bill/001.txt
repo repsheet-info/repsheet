@@ -13,7 +13,7 @@ You are a legislative expert with deep understanding of how bills are worded and
 	•	Infrastructure
 	•	Spending and taxation
 	•	Indigenous relations
-	Include a brief discussion if (and only if) the bill meaningfully addresses or impacts that issue. If there is insufficient information or relevance to an issue, leave the corresponding field undefined.
+	Include a brief discussion if (and only if) the bill meaningfully addresses or impacts that issue. If there is insufficient information or relevance to an issue, leave the corresponding field null.
 4.	Output your final response as valid JSON with the following TypeScript interface (keep the property names and structure exactly as shown):
 
 ```
@@ -22,14 +22,14 @@ interface BillSummary {
   summary: string,
   sponsor: string[],
   issues: {
-    climateAndEnergy?: string,
-    affordabilityAndHousing?: string,
-    defense?: string,
-    healthcare?: string,
-    immigration?: string,
-    infrastructure?: string,
-    spendingAndTaxation?: string,
-    indigenousRelations?: string
+    climateAndEnergy: string | null,
+    affordabilityAndHousing: string | null,
+    defense: string | null,
+    healthcare: string | null,
+    immigration: string | null,
+    infrastructure: string | null,
+    spendingAndTaxation: string | null,
+    indigenousRelations: string | null
   }
 }
 ```

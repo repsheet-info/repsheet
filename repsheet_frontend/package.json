@@ -1,0 +1,19 @@
+{
+  "name": "@repsheet-info/repsheet-frontend",
+  "type": "module",
+  "private": true,
+  "git": "https://github.com/RepSheet-info/repsheet",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.32.6",
+    "astro": "^5.5.3",
+    "sharp": "^0.32.5"
+  }
+}

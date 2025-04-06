@@ -1,0 +1,13 @@
+---
+import { LinkCard } from "@astrojs/starlight/components";
+
+interface Props {
+  name: string;
+  link: string;
+  description: string;
+}
+
+const { name, link, description } = Astro.props;
+---
+
+<LinkCard href={link} title={name} description={description} />

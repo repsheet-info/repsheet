@@ -1,0 +1,15 @@
+---
+import { Card } from "@astrojs/starlight/components";   
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<Card title={title.toUpperCase()}>{description.split("\n").map((line) => <p>{line}</p>)}</Card>
+
+
+

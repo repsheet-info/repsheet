@@ -1,5 +1,5 @@
 
-DATA_DIR = backend/data
+DATA_DIR = repsheet_backend/data
 DATA_BUCKET = gs://repsheet-data
 
 data-upload:

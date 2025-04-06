@@ -1,0 +1,36 @@
+---
+title: Repsheet Canada
+description: Track and understand how Canadian politicians vote on important bills.
+template: splash
+hero:
+  tagline: Discover how your representatives vote in Parliament
+  image:
+    file: ../../../assets/jason-hafso-C2keINMOhIE-unsplash.jpg
+  actions:
+    - text: Methodology
+      link: /canada/methodology
+      icon: right-arrow
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+import PoliticianSummary from "../../../components/PoliticianSummary.astro";
+
+## About Repsheet
+
+Repsheet is your go-to resource for understanding how Canadian federal parliamentarians vote on important bills. Our platform provides:
+
+## Party leaders
+
+<CardGrid>
+  <PoliticianSummary
+    name="Mark Carney"
+    link="/canada/representative/mark-carney"
+    description="Leader of the Liberal Party of Canada"
+  />
+  <PoliticianSummary
+    name="Pierre Poilievre"
+    link="/canada/representative/pierre-poilievre"
+    description="Leader of the Conservative Party of Canada"
+  />
+</CardGrid>

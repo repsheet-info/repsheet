@@ -1,0 +1,30 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+import db from '../../../utils/db';
+import { assertIsBill, assertIsBillSummary } from '../../../types/guards';
+import type { Bill } from '../../../types/db';
+
+// Get the slug from the URL
+const { billId } = Astro.params;
+
+const bill = db.prepare('SELECT * FROM bills WHERE LOWER("Bill ID") = LOWER(?)').get(billId);
+
+assertIsBill(bill);
+
+const summary = JSON.parse(bill.Summary.replace('undefined', 'null'));
+
+assertIsBillSummary(summary);
+
+const name = summary.title;
+
+export function getStaticPaths() {
+  const allBills: Bill[] = db.prepare('SELECT * FROM bills').all();
+
+  return allBills.map((bill) => ({
+    params: { billId: bill["Bill ID"] },
+  }));
+}
+---
+
+<StarlightPage frontmatter={{ title: name }}>

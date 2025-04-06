@@ -1,22 +1,31 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-
+import db from '../../../utils/db';
+import { assertIsMember } from '../../../types/guards';
+import type { Member } from '../../../types/db';
+import { makeMemberSlug } from '../../../utils/slug';
 // Get the slug from the URL
 const { slug } = Astro.params;
 
+const [firstName, lastName] = slug!.split('-');
+const member = db.prepare('SELECT * FROM members WHERE LOWER("First Name") = LOWER(?) AND LOWER("Last Name") = LOWER(?)').get(firstName, lastName);
+
+assertIsMember(member);
+
 // For now, just display the slug as the name
 // In the future, this will be replaced with actual data from a database or API
-const name = slug!.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-
+const name = `${member['First Name']} ${member['Last Name']}`;
 
 export function getStaticPaths() {
-  return [
-    { params: { slug: "mark-carney" }},
-    { params: { slug: "pierre-poilievre" }},
-  ];
+  const allMembers: Member[] = db.prepare('SELECT * FROM members').all();
+
+  return allMembers.map((rep) => ({
+    params: { slug: makeMemberSlug(rep) },
+  }));
 }
 
 ---
 
 <StarlightPage frontmatter={{ title: name }}>
+  
 </StarlightPage>

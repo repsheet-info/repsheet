@@ -1,0 +1,24 @@
+# Repsheet
+
+## Overview
+
+Repsheet is a website which summarizes politicians voting histories.
+
+The site consists of bill summaries and voting records. Right now, it focuses on
+Canadian federal parliamentarians.
+
+The site consists of a homepage that describes the site and its purpose. From
+the homepage, the user can search for a parliamentarian by name. The user will
+also be presented with a list of notable parliamentarians, usually party leaders.
+
+The user can also search for a bill by name.
+
+Each MP will have a page that summarizes their voting history. Each bill will have
+a page that presents a summary of the bill and a link to the bill's full text.
+
+## Frontend details
+
+The site is built on Astro, with some custom components. The content is stored in
+Markdown, with some YAML frontmatter for metadata.
+
+The site uses the Starlight theme for Astro.

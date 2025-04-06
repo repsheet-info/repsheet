@@ -34,11 +34,6 @@ MEMBERS_TABLE = "members"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-class BillId(NamedTuple):
-    parliament: int
-    session: int
-    bill_number: str
-
 @contextmanager
 def db_connect():
     """Context manager for database connection."""
@@ -58,32 +53,3 @@ def print_table_schema(table_name):
         rows = cursor.fetchall()
         for row in rows:
             print(f"{row[1]}: {row[2]} {'NOT NULL' if row[3] else 'NULL'} {'PRIMARY KEY' if row[5] else ''}")
-
-@retry(stop=stop_after_attempt(10), wait=wait_exponential())
-def download_all_bill_texts(parliament, session, bill_number):
-    bill_dir = path.join(DATA_DIR, "bill_text", str(parliament), str(session), str(bill_number))
-    found = False
-    for reading in (1, 2, 3, 4):
-        for lang in ("-E", "_E"):
-            filename = f"{bill_number}_{reading}/{bill_number}{lang}.xml"
-            filepath = path.join(bill_dir, filename)
-            if path.exists(filepath):
-                # empty file indicates that the file was not found
-                if path.getsize(filepath) > 0:
-                    found = True
-                continue
-            for bill_type in ("Private", "Government"):
-                url = f"https://www.parl.ca/Content/Bills/{parliament}{session}/{bill_type}/{bill_number}/{filename}"
-                resp = httpx.get(url)
-                os.makedirs(path.dirname(filepath), exist_ok=True)
-                with open(filepath, "wb") as f:
-                    if resp.status_code == 200:
-                        f.write(resp.content)
-                        print(f"Downloaded {filename} from {url}")
-                        found = True
-                        # break otherwise the next iteration might overwrite the file with an empty file
-                        break
-                    else:
-                        # use an empty file to indicate that the file was not found
-                        f.write(b"")
-    return found

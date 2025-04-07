@@ -40,6 +40,4 @@ Steps to follow:
 
 The bill in XML format is below:
 
-==========
-{{RAW_BILL}}
-==========
+{{BILL_XML}}

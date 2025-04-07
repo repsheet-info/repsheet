@@ -15,12 +15,13 @@ PARLIMENTARY_SESSIONS = (
     "42-1",
     "41-2",
     "41-1",
-    "40-3",
-    "40-2",
-    "40-1",
-    "39-2",
-    "39-1",
-    "38-1",
+    # Only considering the most recent four parliaments for now
+    # "40-3",
+    # "40-2",
+    # "40-1",
+    # "39-2",
+    # "39-1",
+    # "38-1",
 )
 
 DATA_DIR = "repsheet_backend/data"

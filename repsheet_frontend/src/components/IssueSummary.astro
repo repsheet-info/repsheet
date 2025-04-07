@@ -9,7 +9,7 @@ interface Props {
 const { title, description } = Astro.props;
 ---
 
-<Card title={title.toUpperCase()}>{description.split("\n").map((line) => <p>{line}</p>)}</Card>
+<Card title={title}>{description.split("\n").map((line) => <p>{line}</p>)}</Card>
 
 
 

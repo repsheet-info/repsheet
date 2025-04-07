@@ -26,6 +26,7 @@ PARLIMENTARY_SESSIONS = (
 DATA_DIR = "repsheet_backend/data"
 EXPORT_DB = "repsheet.sqlite"
 GCP_BILLING_PROJECT = "repsheet-app-prod"
+CACHE_BUCKET = "repsheet-cache"
 
 VOTES_HELD_TABLE = "votes_held"
 BILLS_TABLE = "bills"

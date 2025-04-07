@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["astrojs", "frontmatter", "Repsheet"]
+  "cSpell.words": ["astrojs", "frontmatter", "Repsheet"],
+  "python.analysis.typeCheckingMode": "standard"
 }

@@ -3,3 +3,6 @@ pandas==2.2.3
 ipykernel==6.29.5
 jupyter==1.1.1
 tqdm==4.67.1
+google-cloud-storage==3.1.0 
+orjson==3.10.16
+google-genai==1.9.0

@@ -13,7 +13,8 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+import Search from "@astrojs/starlight/components/Search.astro";
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import PoliticianSummary from "../../../components/PoliticianSummary.astro";
 
 ## Party leaders
@@ -29,4 +30,15 @@ import PoliticianSummary from "../../../components/PoliticianSummary.astro";
     link="/canada/representative/pierre_poilievre"
     description="Leader of the Conservative Party of Canada"
   />
+  <LinkCard
+    title="Mark Carney"
+    description="Leader of the Liberal Party of Canada"
+    href="/canada/representative/mark_carney"
+  />
 </CardGrid>
+
+## Search for your representative
+
+<div style={{ paddingTop: "1rem" }}>
+  <Search />
+</div>

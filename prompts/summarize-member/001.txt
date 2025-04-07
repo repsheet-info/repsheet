@@ -23,7 +23,7 @@ interface BillSummary {
 You must analyze these BillSummary entries collectively. Based on the themes from the summary fields as well as any non-null values in issues, craft:
 	1.	A high-level summary describing the Member of Parliament’s general stance, patterns, and key priorities inferred from these voting records.
 	2.	An issues object capturing an overall stance or perspective for each key policy area.
-    3.  All summaries should be 2-5 paragraphs in length.  If there is not enough data to form an opinion on a summary, a value of null should be used.
+  3.  All summaries should be 2-5 paragraphs in length.  If there is not enough data to form an opinion on a summary, a value of null should be used.
 
 Your output must be valid JSON in exactly the following structure:
 
@@ -53,6 +53,4 @@ Important requirements:
 
 The input data is below:
 
-==========
 {{RAW_INPUT_DATA}}
-==========

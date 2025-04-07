@@ -6,3 +6,4 @@ tqdm==4.67.1
 google-cloud-storage==3.1.0 
 orjson==3.10.16
 google-genai==1.9.0
+tenacity==9.1.2

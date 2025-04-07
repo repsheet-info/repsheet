@@ -19,7 +19,7 @@ google_ai = genai.Client(
 google_ai_cache = GCSCache(
     project=GCP_BILLING_PROJECT,
     cache_bucket=CACHE_BUCKET,
-    key_prefix="google-ai",
+    key_prefix="google-ai/",
     mode="json",
 )
 
@@ -29,14 +29,14 @@ google_ai_cache = GCSCache(
 )
 def _generate_text(prompt: str, model: str) -> Optional[str]:
     """Generate text using Google Gemini."""
-    # print(f"Generating text with Google Gemini ({len(prompt)} chars)")
+    print(f"Generating text with {model} ({len(prompt)} chars)")
     try:
         response = google_ai.models.generate_content(model=model, contents=prompt)
     except ClientError as e:
         if e.code == 400 and e.message is not None and "exceeds the maximum number of tokens allowed" in e.message:
             return None
         raise e
-    # print(f"Received response from Google Gemini ({len(response.text)} chars)")
+    print(f"Received response from {model} ({len(response.text or "")} chars)")
     return response.text
 
 
@@ -45,7 +45,7 @@ def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
     Only counts input tokens, not output tokens."""
     # Example cost estimation logic
     response = google_ai.models.count_tokens(model=model, contents=prompt)
-    cost = response.total_tokens * (COST_PER_MTOK[model] / 1e6)
+    cost = (response.total_tokens or 0) * (COST_PER_MTOK[model] / 1e6)
     return cost
 
 
@@ -76,5 +76,6 @@ async def generate_text(prompt: str, model: str = GEMINI_FLASH_2) -> Optional[st
     if cached_response:
         return cached_response
     response = await asyncio.to_thread(_generate_text, prompt, model)
-    await google_ai_cache.set(cache_key, response)
+    if response is not None:
+        await google_ai_cache.set(cache_key, response)
     return response

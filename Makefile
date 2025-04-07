@@ -22,7 +22,8 @@ app-push:
 		--delete-unmatched-destination-objects \
 		repsheet_frontend/dist \
 		$(APP_DIST_BUCKET) 
-	gsutil setmeta -h "Cache-Control: public, max-age=604800, immutable" $(APP_DIST_BUCKET)/_astro/*
+	gsutil -m setmeta -h "Cache-Control: max-age=300, public" $(APP_DIST_BUCKET)/**/*
+	gsutil -m setmeta -h "Cache-Control: public, max-age=604800, immutable" $(APP_DIST_BUCKET)/_astro/**/*
 
 app-build:
 	cd repsheet_frontend && pnpm build

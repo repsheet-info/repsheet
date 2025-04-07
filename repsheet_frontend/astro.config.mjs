@@ -14,6 +14,7 @@ export default defineConfig({
       sidebar: [],
       lastUpdated: true,
       pagination: false,
+      tableOfContents: false,
     }),
   ],
 });

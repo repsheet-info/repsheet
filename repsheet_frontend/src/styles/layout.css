@@ -1,5 +1,5 @@
 #starlight__sidebar {
-  border: none;
+  display: none;
 }
 
 .right-sidebar {
@@ -8,4 +8,8 @@
 
 .content-panel {
   border: none;
+}
+
+.main-frame {
+  padding-left: 0;
 }

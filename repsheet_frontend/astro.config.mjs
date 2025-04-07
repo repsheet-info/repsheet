@@ -17,4 +17,10 @@ export default defineConfig({
       tableOfContents: false,
     }),
   ],
+  redirects: {
+    "/": {
+      status: 302,
+      destination: "/canada",
+    },
+  },
 });

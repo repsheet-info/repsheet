@@ -4,6 +4,8 @@ import db from '../../../utils/db';
 import { assertIsMember } from '../../../types/guards';
 import type { Member } from '../../../types/db';
 import { makeMemberSlug } from '../../../utils/slug';
+import PartyBadge from '../../../components/PartyBadge.astro';
+import { memberTitle } from '../../../utils/member-title';
 // Get the slug from the URL
 const { slug } = Astro.params;
 
@@ -14,7 +16,7 @@ assertIsMember(member);
 
 // For now, just display the slug as the name
 // In the future, this will be replaced with actual data from a database or API
-const name = `${member['First Name']} ${member['Last Name']}`;
+const name = memberTitle(member);
 
 export function getStaticPaths() {
   const allMembers: Member[] = db.prepare('SELECT * FROM members').all();
@@ -26,6 +28,7 @@ export function getStaticPaths() {
 
 ---
 
-<StarlightPage frontmatter={{ title: name }}>
-  
+<StarlightPage frontmatter={{ title: name, description: member.Constituency, banner: {content: "We're still working on this!"} }}>
+  <PartyBadge party={member['Political Affiliation']} />
+  Representing {member.Constituency} in {member['Province / Territory']}
 </StarlightPage>

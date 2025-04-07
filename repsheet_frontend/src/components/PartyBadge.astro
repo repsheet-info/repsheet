@@ -1,0 +1,22 @@
+---
+
+interface Props {
+  party: string;
+}
+
+const partyColors = {
+  "Conservative": "#1A4782",   // Conservative blue
+  "Liberal":      "#D71920",   // Liberal red
+  "Green Party":        "#3D9B35",   // Green Party green
+  "NDP":          "#F6851B",   // NDP orange
+  "Bloc Québécois": "#005DAA"  // Bloc Québécois blue
+};
+
+const { party } = Astro.props;
+---
+
+<div style={{ backgroundColor: partyColors[party as keyof typeof partyColors], color: "white", padding: "0.5rem", paddingLeft: "1rem", borderRadius: "0.5rem", fontSize: "1.5rem" }}>
+  {party}
+</div>
+
+

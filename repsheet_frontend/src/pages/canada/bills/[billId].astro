@@ -35,8 +35,10 @@ const issues = Object.keys(summary.issues).filter((issue) => summary.issues[issu
   {summary.summary.split("\n").map((line) => <p>{line}</p>)}
   <h2>Issues</h2>
   <Stack>
-    {issues.map((issue) => (
+    {issues.length > 0 ?issues.map((issue) => (
       <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary.issues[issue as keyof typeof summary.issues] as string} /></li>
-    ))}
+    )) : (
+      <p>This bill was not summarized into specific issues.</p>
+    )}
   </Stack>
 </StarlightPage>

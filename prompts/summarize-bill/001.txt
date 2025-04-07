@@ -18,9 +18,7 @@ You are a legislative expert with deep understanding of how bills are worded and
 
 ```
 interface BillSummary {
-  title: string,
   summary: string,
-  sponsor: string[],
   issues: {
     climateAndEnergy: string | null,
     affordabilityAndHousing: string | null,
@@ -35,10 +33,13 @@ interface BillSummary {
 ```
 
 Steps to follow:
-	1.	Parse the XML content to find the bill’s title, date, and sponsors.
+	1.	Parse the XML content to understand the bill.
 	2.	Draft a concise summary (2 to 5 paragraphs) describing the overall purpose and effects of the bill.
 	3.	For each of the 8 issue areas, include text only if the bill provides enough evidence or implication for that issue. Otherwise, leave that field empty.
 	4.	Return your response as valid JSON, ensuring you do not include any additional commentary or keys not present in the TypeScript interface.
 
-The bill in XML format starts now:
+The bill in XML format is below:
 
+==========
+{{RAW_BILL}}
+==========

@@ -4,7 +4,7 @@ import IssueSummary from '../../../components/IssueSummary.astro';
 import Stack from '../../../components/Stack.astro';
 import db from '../../../utils/db';
 import { assertIsBill, assertIsBillSummary } from '../../../types/guards';
-import type { Bill } from '../../../types/db';
+import type { Bill, BillSummary, Issues } from '../../../types/db';
 import { issueName } from '../../../utils/issues-name';
 
 // Get the slug from the URL
@@ -14,11 +14,15 @@ const bill = db.prepare('SELECT * FROM bills WHERE LOWER("Bill ID") = LOWER(?)')
 
 assertIsBill(bill);
 
-const summary = JSON.parse(bill.Summary.replace('undefined', 'null'));
+let summary: BillSummary | null = null;
+let issues: string[] = [];
+if (bill.Summary) {
+  summary = JSON.parse(bill.Summary.replace('undefined', 'null'));
+  assertIsBillSummary(summary);
+  issues = Object.keys(summary.issues).filter((issue) => summary!.issues[issue as Issues] !== null);
 
-assertIsBillSummary(summary);
+}
 
-const name = summary.title;
 
 export function getStaticPaths() {
   const allBills: Bill[] = db.prepare('SELECT * FROM bills').all();
@@ -28,15 +32,36 @@ export function getStaticPaths() {
   }));
 }
 
-const issues = Object.keys(summary.issues).filter((issue) => summary.issues[issue as keyof typeof summary.issues] !== null);
+const title = bill["Bill Number"]
+const subtitle = bill["Short Title"]
+
+const longTitle = bill["Long Title"]
+const firstReadingDate = bill["First Reading Date"] ? new Date(bill["First Reading Date"]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null
+const parliament = bill["Parliament"]
+const session = bill["Session"]
+const link  = bill['Bill External URL']
+const billType = bill["Bill Type"]
+
 ---
 
-<StarlightPage frontmatter={{ title: name }}>
-  {summary.summary.split("\n").map((line) => <p>{line}</p>)}
+<StarlightPage frontmatter={{ title, subtitle }}>
+  <h2>Details</h2>
+  <dl>
+    <dt>Full Title</dt>
+    <dd>{longTitle}</dd>
+    <dt>First Reading</dt>
+    <dd>{firstReadingDate}, Parliament {parliament}, Session {session}</dd>
+    <dt>Type</dt>
+    <dd>{billType}</dd>
+    <dt>Full Content</dt>
+    <dd><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></dd>
+  </dl>
+  <h2>Summary</h2>
+  {summary?.summary.split("\n").map((line) => <p>{line}</p>)}
   <h2>Issues</h2>
   <Stack>
-    {issues.length > 0 ?issues.map((issue) => (
-      <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary.issues[issue as keyof typeof summary.issues] as string} /></li>
+    {issues.length > 0 ? issues.map((issue) => (
+      <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary!.issues[issue as Issues] as string} /></li>
     )) : (
       <p>This bill was not summarized into specific issues.</p>
     )}

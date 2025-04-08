@@ -15,6 +15,9 @@ export default defineConfig({
       lastUpdated: true,
       pagination: false,
       tableOfContents: false,
+      components: {
+        PageTitle: "./src/components/overrides/PageTitle.astro",
+      },
     }),
   ],
   redirects: {

@@ -4,6 +4,7 @@ from os import path
 import os
 from typing import NamedTuple, Optional
 import httpx
+from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from repsheet_backend.common import DATA_DIR, MEMBER_VOTES_TABLE, VOTES_HELD_TABLE, db_connect
@@ -72,3 +73,19 @@ def get_every_bill_voted_on_by_a_member() -> list[BillId]:
             "ORDER BY v.[Parliament] DESC "
         ).fetchall()
         return [BillId(*bill) for bill in bills]
+
+class BillIssues(BaseModel):
+    climateAndEnergy: Optional[str]
+    affordabilityAndHousing: Optional[str]
+    defense: Optional[str]
+    healthcare: Optional[str]
+    immigration: Optional[str]
+    infrastructure: Optional[str]
+    spendingAndTaxation: Optional[str]
+    indigenousRelations: Optional[str]
+    crimeAndJustice: Optional[str]
+    civilRights: Optional[str]
+
+class BillSummary(BaseModel):
+    summary: str
+    issues: BillIssues

@@ -11,7 +11,7 @@ interface BillVotingRecord {
   summary: string,
   billID: string,
   billNumber: string,
-  voted: 'yay' | 'nay' | 'abstain',
+  voted: 'yea' | 'nay' | 'abstain',
   issues: {
     climateAndEnergy: string | null,
     affordabilityAndHousing: string | null,

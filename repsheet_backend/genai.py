@@ -10,6 +10,8 @@ GEMINI_FLASH_2 = "gemini-2.0-flash"
 
 COST_PER_MTOK = {GEMINI_FLASH_2: 0.15}
 
+CONTEXT_WINDOW = {GEMINI_FLASH_2: 1e6}
+
 google_ai = genai.Client(
     vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1"
 )
@@ -24,7 +26,7 @@ google_ai_cache = GCSCache(
 )
 
 @retry(
-    stop=stop_after_attempt(3),
+    stop=stop_after_attempt(10),
     wait=wait_exponential()
 )
 def _generate_text(prompt: str, model: str) -> Optional[str]:
@@ -45,7 +47,12 @@ def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
     Only counts input tokens, not output tokens."""
     # Example cost estimation logic
     response = google_ai.models.count_tokens(model=model, contents=prompt)
-    cost = (response.total_tokens or 0) * (COST_PER_MTOK[model] / 1e6)
+    tokens = response.total_tokens
+    if tokens is None:  
+        raise ValueError("Failed to count tokens")
+    if tokens > CONTEXT_WINDOW[model]:
+        raise ValueError(f"Prompt exceeds context window of {CONTEXT_WINDOW[model]} tokens")
+    cost = tokens * (COST_PER_MTOK[model] / 1e6)
     return cost
 
 

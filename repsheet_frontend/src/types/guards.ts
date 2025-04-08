@@ -72,8 +72,59 @@ export function assertIsBill(bill: any): asserts bill is Bill {
     throw new Error("Object is not of type Bill - Bill ID must be a string");
   }
 
-  if (typeof bill["Summary"] !== "string") {
-    throw new Error("Object is not of type Bill - Summary must be a string");
+  if (typeof bill["Parliament"] !== "number") {
+    throw new Error("Object is not of type Bill - Parliament must be a number");
+  }
+
+  if (typeof bill["Session"] !== "number") {
+    throw new Error("Object is not of type Bill - Session must be a number");
+  }
+
+  if (typeof bill["Bill Number"] !== "string") {
+    throw new Error(
+      "Object is not of type Bill - Bill Number must be a string"
+    );
+  }
+
+  if (typeof bill["Bill Type"] !== "string") {
+    throw new Error("Object is not of type Bill - Bill Type must be a string");
+  }
+
+  if (
+    bill["Private Bill Sponsor Member ID"] !== null &&
+    typeof bill["Private Bill Sponsor Member ID"] !== "string"
+  ) {
+    throw new Error(
+      "Object is not of type Bill - Private Bill Sponsor Member ID must be a string or null"
+    );
+  }
+
+  if (typeof bill["Long Title"] !== "string") {
+    throw new Error("Object is not of type Bill - Long Title must be a string");
+  }
+
+  if (bill["Short Title"] !== null && typeof bill["Short Title"] !== "string") {
+    throw new Error(
+      "Object is not of type Bill - Short Title must be a string or null"
+    );
+  }
+
+  if (typeof bill["Bill External URL"] !== "string") {
+    throw new Error(
+      "Object is not of type Bill - Bill External URL must be a string"
+    );
+  }
+
+  if (typeof bill["First Reading Date"] !== "string") {
+    throw new Error(
+      "Object is not of type Bill - First Reading Date must be a string"
+    );
+  }
+
+  if (bill["Summary"] !== null && typeof bill["Summary"] !== "string") {
+    throw new Error(
+      "Object is not of type Bill - Summary must be a string or null"
+    );
   }
 }
 
@@ -86,24 +137,9 @@ export function assertIsBillSummary(
     );
   }
 
-  if (typeof summary.title !== "string") {
-    throw new Error(
-      "Object is not of type BillSummary - title must be a string"
-    );
-  }
-
   if (typeof summary.summary !== "string") {
     throw new Error(
       "Object is not of type BillSummary - summary must be a string"
-    );
-  }
-
-  if (
-    !Array.isArray(summary.sponsor) ||
-    !summary.sponsor.every((s) => typeof s === "string")
-  ) {
-    throw new Error(
-      "Object is not of type BillSummary - sponsor must be an array of strings"
     );
   }
 

@@ -12,21 +12,29 @@ export interface Member {
 
 export interface Bill {
   "Bill ID": string;
-  Summary: string;
+  Parliament: number;
+  Session: number;
+  "Bill Number": string;
+  "Bill Type": string;
+  "Private Bill Sponsor Member ID": string | null;
+  "Long Title": string;
+  "Short Title": string | null;
+  "Bill External URL": string;
+  "First Reading Date": string;
+  Summary: string | null;
 }
 
+export type Issues =
+  | "climateAndEnergy"
+  | "affordabilityAndHousing"
+  | "defense"
+  | "healthcare"
+  | "immigration"
+  | "infrastructure"
+  | "spendingAndTaxation"
+  | "indigenousRelations";
+
 export interface BillSummary {
-  title: string;
   summary: string;
-  sponsor: string[];
-  issues: {
-    climateAndEnergy: string | null;
-    affordabilityAndHousing: string | null;
-    defense: string | null;
-    healthcare: string | null;
-    immigration: string | null;
-    infrastructure: string | null;
-    spendingAndTaxation: string | null;
-    indigenousRelations: string | null;
-  };
+  issues: Record<Issues, string | null>;
 }

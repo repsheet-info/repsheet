@@ -12,9 +12,13 @@ COST_PER_MTOK = {GEMINI_FLASH_2: 0.15}
 
 CONTEXT_WINDOW = {GEMINI_FLASH_2: 1e6}
 
+MAX_CONCURRENT_REQUESTS = 16
+
 google_ai = genai.Client(
     vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1"
 )
+
+google_ai_api_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
 # TODO I messed up the cache key prefix so
 # at some point we should migrate this over to having a "google-ai/" prefix
@@ -68,7 +72,8 @@ async def estimate_cost_usd_input_only(
     cached_response = await google_ai_cache.get(cache_key)
     if cached_response:
         return cached_response
-    cost = await asyncio.to_thread(_estimate_cost_usd_input_only, prompt, model)
+    async with google_ai_api_semaphore:
+        cost = await asyncio.to_thread(_estimate_cost_usd_input_only, prompt, model)
     await google_ai_cache.set(cache_key, cost)
     return cost
 
@@ -82,7 +87,8 @@ async def generate_text(prompt: str, model: str = GEMINI_FLASH_2) -> Optional[st
     cached_response = await google_ai_cache.get(cache_key)
     if cached_response:
         return cached_response
-    response = await asyncio.to_thread(_generate_text, prompt, model)
+    async with google_ai_api_semaphore:
+        response = await asyncio.to_thread(_generate_text, prompt, model)
     if response is not None:
         await google_ai_cache.set(cache_key, response)
     return response

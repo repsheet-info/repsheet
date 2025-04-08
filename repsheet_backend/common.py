@@ -34,6 +34,9 @@ BILLS_TABLE = "bills"
 MEMBER_VOTES_TABLE = "member_votes"
 MEMBERS_TABLE = "members"
 
+JUSTIN = "Justin Trudeau (Papineau)"
+PIERRE = "Pierre Poilievre (Carleton)"
+
 os.makedirs(DATA_DIR, exist_ok=True)
 
 @contextmanager

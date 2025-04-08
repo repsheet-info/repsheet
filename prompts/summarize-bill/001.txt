@@ -27,7 +27,9 @@ interface BillSummary {
     immigration: string | null,
     infrastructure: string | null,
     spendingAndTaxation: string | null,
-    indigenousRelations: string | null
+    indigenousRelations: string | null,
+	crimeAndJustice: string | null,
+	civilRights: string | null
   }
 }
 ```

@@ -59,8 +59,7 @@ Where each property in issues reflects the MP’s position in that area, derived
 Important requirements:
 - Return only the MemberSummary JSON object—no additional text or formatting.
 - Do not invent details outside the provided input data.
-- Properly escape double quotes and new lines inside string values.
-- Follow standard JSON formatting rules (e.g., use double quotes for keys and string values).
+- Follow standard JSON formatting rules (e.g., use double quotes for keys and string values), and making sure to properly escape double quotes.
 - Use the exact names of the properties and adhere to the required JSON structure for the final output.
 
 The input data is below:

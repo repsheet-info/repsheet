@@ -1,0 +1,15 @@
+---
+interface Props {
+  summary: string;
+}
+
+const { summary } = Astro.props;
+
+// Convert markdown links to HTML links
+const linkedSummary = summary.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="/canada/bills/$2">$1</a>');
+const linkedSummaryLines = linkedSummary.split("\n");
+
+---
+
+
+{linkedSummaryLines.map((line) => <p set:html={line} />)}

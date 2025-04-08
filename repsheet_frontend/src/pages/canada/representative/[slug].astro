@@ -2,10 +2,14 @@
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import db from '../../../utils/db';
 import { assertIsMember } from '../../../types/guards';
-import type { Member } from '../../../types/db';
+import type { Issues, Member } from '../../../types/db';
 import { makeMemberSlug } from '../../../utils/slug';
 import PartyBadge from '../../../components/PartyBadge.astro';
 import { memberTitle } from '../../../utils/member-title';
+import FormattedSummary from '../../../components/FormattedSummary.astro';
+import Stack from '../../../components/Stack.astro';
+import IssueSummary from '../../../components/IssueSummary.astro';
+import { issueName } from '../../../utils/issues-name';
 // Get the slug from the URL
 const { slug } = Astro.params;
 
@@ -26,9 +30,20 @@ export function getStaticPaths() {
   }));
 }
 
+const summary = JSON.parse(member.Summary!);
+const issues = Object.keys(summary.issues).filter((issue) => summary.issues[issue as Issues] !== null);
 ---
 
-<StarlightPage frontmatter={{ title: name, description: member.Constituency, banner: {content: "We're still working on this!"} }}>
+<StarlightPage frontmatter={{ title: name, description: member.Constituency }}>
   <PartyBadge party={member['Political Affiliation']} />
   Representing {member.Constituency} in {member['Province / Territory']}
+  {summary && <FormattedSummary summary={summary.summary} />}
+  <h2>Issues</h2>
+  <Stack>
+    {issues.length > 0 ? issues.map((issue) => (
+      <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary!.issues[issue as Issues] as string} /></li>
+    )) : (
+      <p>This representative was not summarized into specific issues.</p>
+    )}  
+  </Stack>
 </StarlightPage>

@@ -1,4 +1,4 @@
-import type { Bill, BillSummary, Member } from "./db";
+import type { Bill, BillSummary, Member, MemberSummary } from "./db";
 
 export function assertIsMember(member: any): asserts member is Member {
   if (!member || typeof member !== "object") {
@@ -169,6 +169,54 @@ export function assertIsBillSummary(
     ) {
       throw new Error(
         `Object is not of type BillSummary - issues.${field} must be a string or null if present`
+      );
+    }
+  }
+}
+
+export function assertIsMemberSummary(
+  summary: any
+): asserts summary is MemberSummary {
+  if (!summary || typeof summary !== "object") {
+    throw new Error(
+      "Object is not of type MemberSummary - MemberSummary must be an object"
+    );
+  }
+
+  if (typeof summary.summary !== "string") {
+    throw new Error(
+      "Object is not of type MemberSummary - summary must be a string"
+    );
+  }
+
+  if (summary.issues && typeof summary.issues !== "object") {
+    throw new Error(
+      "Object is not of type MemberSummary - issues must be an object"
+    );
+  }
+
+  // Check each optional issue field is a string if present
+  const issueFields = [
+    "climateAndEnergy",
+    "affordabilityAndHousing",
+    "defense",
+    "healthcare",
+    "immigration",
+    "infrastructure",
+    "spendingAndTaxation",
+    "indigenousRelations",
+    "crimeAndJustice",
+    "civilRights",
+  ];
+
+  for (const field of issueFields) {
+    if (
+      summary.issues?.[field] !== undefined &&
+      typeof summary.issues[field] !== "string" &&
+      summary.issues[field] !== null
+    ) {
+      throw new Error(
+        `Object is not of type MemberSummary - issues.${field} must be a string or null if present`
       );
     }
   }

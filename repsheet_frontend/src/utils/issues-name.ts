@@ -9,4 +9,6 @@ export const issueName: Record<keyof BillSummary["issues"], string> = {
   infrastructure: "Infrastructure",
   spendingAndTaxation: "Spending and Taxation",
   indigenousRelations: "Indigenous Relations",
+  crimeAndJustice: "Crime and Justice",
+  civilRights: "Civil Rights",
 };

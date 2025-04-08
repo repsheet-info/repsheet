@@ -1,5 +1,6 @@
 ---
 import { Card } from "@astrojs/starlight/components";   
+import FormattedSummary from "./FormattedSummary.astro";
 
 interface Props {
   title: string;
@@ -7,9 +8,9 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+
 ---
 
-<Card title={title}>{description.split("\n").map((line) => <p>{line}</p>)}</Card>
-
-
-
+<Card title={title}>
+  <FormattedSummary summary={description} />
+</Card>

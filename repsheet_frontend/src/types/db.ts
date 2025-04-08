@@ -8,6 +8,12 @@ export interface Member {
   "Political Affiliation": string;
   "Start Date": string;
   "End Date": string | null;
+  Summary: string | null;
+}
+
+export interface MemberSummary {
+  summary: string;
+  issues: Record<Issues, string | null>;
 }
 
 export interface Bill {
@@ -32,7 +38,9 @@ export type Issues =
   | "immigration"
   | "infrastructure"
   | "spendingAndTaxation"
-  | "indigenousRelations";
+  | "indigenousRelations"
+  | "crimeAndJustice"
+  | "civilRights";
 
 export interface BillSummary {
   summary: string;

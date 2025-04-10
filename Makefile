@@ -16,6 +16,12 @@ db-upload:
 db-download:
 	gcloud storage cp $(DATA_BUCKET)/$(DB_FILENAME) ./$(DB_FILENAME)
 
+db-build:
+	python -m repsheet_backend.scripts.build_db
+
+db-add-summaries:
+	python -m repsheet_backend.scripts.add_summaries
+
 app-push:
 	gcloud storage rsync \
 		--recursive \
@@ -27,3 +33,6 @@ app-push:
 
 app-build:
 	cd repsheet_frontend && pnpm build
+
+backend-format:
+	black --line-length=100 repsheet_backend

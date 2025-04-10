@@ -1,0 +1,317 @@
+from contextlib import contextmanager
+from datetime import datetime
+import re
+import sqlite3
+from typing import Iterator, Optional
+import pandas as pd
+from tqdm import tqdm
+
+from repsheet_backend.common import (
+    BILLS_TABLE,
+    JT,
+    MEMBER_VOTES_TABLE,
+    MEMBERS_TABLE,
+    PARLIMENTARY_SESSIONS,
+    LATEST_PARLIAMENT,
+    VOTES_HELD_TABLE,
+    BillId,
+)
+
+FULL_MEMBER_NAME_REGEX = re.compile(r"^([^ ]+\. )?([^\(]+)(\([^\)]+\))?$")
+HOUSE_CHAMBER_ID = 1
+SENATE_CHAMBER_ID = 2
+REPSHEET_DB = "repsheet.sqlite"
+
+
+class RepsheetDB:
+    db: sqlite3.Connection
+    _full_member_name_cache: dict[str, str | None]
+
+    def __init__(self, db: sqlite3.Connection):
+        self.db = db
+        self._full_member_name_cache = {}
+
+    @contextmanager
+    @staticmethod
+    def connect() -> Iterator["RepsheetDB"]:
+        """Context manager for database connection."""
+        db = sqlite3.connect(REPSHEET_DB)
+        db.row_factory = sqlite3.Row
+        try:
+            yield RepsheetDB(db)
+        finally:
+            db.commit()
+            db.close()
+
+
+    def find_member_id(self, full_member_name: str) -> Optional[str]:
+        """Find a member ID from their full name (e.g. Mr. Justin Trudeau (Papineau)).
+        Does not check honorifics or constituency names.
+        Generally really flakey matching but it guarantees at most one result,
+        so if there's ambiguity it will raise an error."""
+        if full_member_name in self._full_member_name_cache:
+            return self._full_member_name_cache[full_member_name]
+
+        match = FULL_MEMBER_NAME_REGEX.match(full_member_name)
+        if not match:
+            raise ValueError(f"Failed to match full member name: {full_member_name}")
+        honorific, member_name, constituency = match.groups()
+        member_name = member_name.strip()
+        first_name = member_name.split(" ")[0]
+        last_name = member_name.split(" ")[-1]
+
+        rows = self.db.execute(
+            f"SELECT [Member ID] FROM {MEMBERS_TABLE} "
+            "WHERE [First Name] LIKE ? AND [Last Name] LIKE ?",
+            (f"{first_name}%", f"%{last_name}"),
+        ).fetchall()
+
+        if len(rows) > 1:
+            raise ValueError(f"Found multiple member IDs for {full_member_name}: {rows}")
+        if len(rows) == 0:
+            result = None
+        else:
+            assert len(rows) == 1
+            result = rows[0][0]
+
+        self._full_member_name_cache[full_member_name] = result
+        return result
+
+    def create_members_table(self, members: pd.DataFrame):
+        members["Start Date"] = members["Start Date"].apply(parse_parl_datetime)
+        members["End Date"] = members["End Date"].apply(parse_parl_datetime)
+        members["Member ID"] = members.apply(
+            lambda row: f"{row['First Name']} {row["Last Name"]} ({row["Constituency"]})", axis=1
+        )
+
+        self.db.execute(f"DROP TABLE IF EXISTS {MEMBERS_TABLE}")
+        self.db.execute(
+            f"CREATE TABLE {MEMBERS_TABLE} ("
+            "[Member ID] TEXT NOT NULL PRIMARY KEY, "
+            "[Honorific Title] TEXT NULL, "
+            "[First Name] TEXT NOT NULL, "
+            "[Last Name] TEXT NOT NULL, "
+            "[Constituency] TEXT NOT NULL, "
+            "[Province / Territory] TEXT NOT NULL, "
+            "[Political Affiliation] TEXT NOT NULL, "
+            "[Start Date] TIMESTAMP NOT NULL, "
+            "[End Date] TIMESTAMP, "
+            "[Summary] TEXT NULL "
+            ")"
+        )
+
+        members.to_sql(MEMBERS_TABLE, self.db, if_exists="append", index=False)
+        print(f"Inserted {len(members)} members into {MEMBERS_TABLE} table.")
+
+        assert self.find_member_id("Mr. Justin Trudeau (Papineau)") == JT
+        assert self.find_member_id("Mr. Harjit S. Sajjan (Vancouver South)") is not None
+        assert self.find_member_id("Ms. Soraya Martinez Ferrada (Hochelaga)") is not None
+        assert self.find_member_id("Senator Josée Verner (Louis-Saint-Laurent)") is None
+        assert self.find_member_id("Gord Johns") is not None
+
+    def create_bills_table(self, bills_by_session: dict[str, list[dict]]):
+        self.db.execute(f"DROP TABLE IF EXISTS {BILLS_TABLE}")
+        self.db.execute(
+            f"CREATE TABLE {BILLS_TABLE} ("
+            "[Bill ID] TEXT NOT NULL PRIMARY KEY, "
+            "[Parliament] INTEGER NOT NULL, "
+            "[Session] INTEGER NOT NULL, "
+            "[Bill Number] TEXT NOT NULL, "
+            "[Bill Type] TEXT NOT NULL, "
+            "[Private Bill Sponsor Member ID] TEXT NULL,"
+            "[Long Title] TEXT NOT NULL, "
+            "[Short Title] TEXT NULL, "
+            "[Bill External URL] TEXT NOT NULL, "
+            "[First Reading Date] TIMESTAMP NOT NULL, "
+            "[Summary] TEXT NULL, "
+            f"FOREIGN KEY ([Private Bill Sponsor Member ID]) REFERENCES {MEMBERS_TABLE}([Member ID]) "
+            ")"
+        )
+
+        assert bills_by_session.keys() == set(PARLIMENTARY_SESSIONS)
+        for psession, bills in bills_by_session.items():
+            parliament, session = psession.split("-")
+            parliament = int(parliament)
+            session = int(session)
+            bills = bills_by_session[psession]
+            bill_rows = []
+            for bill in bills:
+                row = {}
+
+                row["Parliament"] = parliament
+                row["Session"] = session
+
+                reading_dates = [
+                    str(bill[k])
+                    for k in bill.keys()
+                    if k.endswith("ReadingDateTime") and bill[k] is not None
+                ]
+                if len(reading_dates) == 0:
+                    continue
+                else:
+                    row["First Reading Date"] = datetime.fromisoformat(sorted(reading_dates)[0])
+
+                row["Long Title"] = bill["LongTitleEn"]
+                short_title = bill["ShortTitleEn"]
+                if not short_title:
+                    short_title = None
+                row["Short Title"] = short_title
+
+                bill_type = bill["BillTypeEn"]
+                if (
+                    bill_type == "Private Member’s Bill"
+                    and bill["OriginatingChamberId"] == HOUSE_CHAMBER_ID
+                ):
+                    sponsor_member_id = self.find_member_id(bill["SponsorEn"])
+                    if parliament == LATEST_PARLIAMENT and sponsor_member_id is None:
+                        raise ValueError(f"Failed to find member ID for {bill['SponsorEn']}")
+                else:
+                    sponsor_member_id = None
+                row["Private Bill Sponsor Member ID"] = sponsor_member_id
+                row["Bill Type"] = bill_type
+            
+                bill_number = bill["BillNumberFormatted"]
+                row["Bill Number"] = bill_number
+                row["Bill ID"] = f"{parliament}-{session}-{bill_number}"
+                row["Bill External URL"] = (
+                    f"https://www.parl.ca/legisinfo/en/bill/{parliament}-{session}/{bill_number.lower()}"
+                )
+
+                bill_rows.append(row)
+
+            pd.DataFrame(bill_rows).to_sql(
+                BILLS_TABLE,
+                self.db,
+                if_exists="append",
+                index=False,
+            )
+
+
+    def create_votes_table(self, votes_by_session: dict[str, pd.DataFrame]) -> None:
+        self.db.execute(f"DROP TABLE IF EXISTS {VOTES_HELD_TABLE}")
+        self.db.execute(
+            f"CREATE TABLE {VOTES_HELD_TABLE} ("
+            "[Vote ID] TEXT NOT NULL PRIMARY KEY, "
+            "[Parliament] INTEGER NOT NULL, "
+            "[Session] INTEGER NOT NULL, "
+            "[Date] TIMESTAMP NOT NULL, "
+            "[Vote Number] INTEGER NOT NULL, "
+            "[Vote Subject] TEXT NOT NULL, "
+            "[Vote Result] TEXT NOT NULL, "
+            "[Yeas] INTEGER, "
+            "[Nays] INTEGER, "
+            "[Paired] INTEGER, "
+            "[Bill Number] TEXT NULL, "
+            "[Bill ID] TEXT NULL, "
+            "[Agreed To] INTEGER NOT NULL, "
+            f"FOREIGN KEY ([Bill ID]) REFERENCES {BILLS_TABLE}([Bill ID]) "
+        ")")
+        self.db.execute(
+            f"CREATE UNIQUE INDEX idx_session_vote_id ON {VOTES_HELD_TABLE} ([Parliament], [Session], [Vote Number])"
+        )
+
+        assert votes_by_session.keys() == set(PARLIMENTARY_SESSIONS)
+        for p_session, v in votes_by_session.items():
+            parliament, session = p_session.split("-")
+            v["Vote Subject"] = v["Vote Subject"].astype("string")
+            v["Vote Result"] = v["Vote Result"].astype("string")
+            v["Agreed To"] = v["Vote Result"].apply(lambda x: True if x == "Agreed To" else False)
+            v["Bill Number"] = v["Bill Number"].astype("string")
+            v["Bill ID"] = v["Bill Number"].apply(lambda x: f"{parliament}-{session}-{x}" if pd.notna(x) else None).astype("string")
+            v["Date"] = v["Date"].apply(parse_parl_datetime)
+            v["Vote ID"] = v["Parliament"].astype("string") + "-" + v["Session"].astype("string") + "-" + v["Vote Number"].astype("string")
+
+            for c in v.columns:
+                assert v[c].dtype != "object", f"Column {c} is still an object type"
+
+            v.to_sql(VOTES_HELD_TABLE, self.db, if_exists="append", index=False)
+            print(f"Inserted {len(v)} votes into {VOTES_HELD_TABLE} table from session {p_session}.")
+
+
+    def get_all_votes_held(self) -> list[str]:
+        """Return Vote ID for all votes held"""
+        rows = self.db.execute(f"SELECT [Vote ID] FROM {VOTES_HELD_TABLE}").fetchall()
+        return [row[0] for row in rows]
+    
+
+    def create_member_votes_table(self, member_votes_by_vote_id: dict[str, pd.DataFrame]) -> None:
+        self.db.execute(f"DROP TABLE IF EXISTS {MEMBER_VOTES_TABLE}")
+        self.db.execute(
+            f"CREATE TABLE {MEMBER_VOTES_TABLE} ("
+            "[Vote ID] TEXT NOT NULL, "
+            # null if this is not a current MP
+            "[Member ID] TEXT NULL, "
+            "[Member of Parliament] TEXT NOT NULL, "
+            "[Political Affiliation] TEXT NOT NULL, "
+            "[Member Voted] TEXT NULL, "
+            "Paired TEXT NULL, "
+            f"FOREIGN KEY ([Vote ID]) REFERENCES {VOTES_HELD_TABLE}([Vote ID]), "
+            f"FOREIGN KEY ([Member ID]) REFERENCES {MEMBERS_TABLE}([Member ID]), "
+            "PRIMARY KEY ([Vote ID], [Member ID]) "
+            ")"
+        )
+    
+        self.db.execute(
+            f"CREATE UNIQUE INDEX IF NOT EXISTS idx_member_vote ON {MEMBER_VOTES_TABLE} ([Vote ID], [Member ID])"
+        )
+        self.db.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_member_vote_id ON {MEMBER_VOTES_TABLE} ([Member ID])"
+        )
+        self.db.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_member_vote_vote_id ON {MEMBER_VOTES_TABLE} ([Vote ID])"
+        )
+
+        print(f"Inserting {sum(len(v) for v in member_votes_by_vote_id.values())} member votes into {MEMBER_VOTES_TABLE} table.")
+        for vote_id, v in tqdm(member_votes_by_vote_id.items()):
+            v["Vote ID"] = vote_id
+            v["Member ID"] = v["Member of Parliament"].apply(self.find_member_id)
+            parliament = vote_id.split("-")[0]
+            if parliament == LATEST_PARLIAMENT and len(v[v["Member ID"].isna()]) > 0:
+                raise ValueError(f"Found members of latest Parliament we could not match to an ID: {v[v["Member ID"].isna()]}")
+            v.to_sql(
+                MEMBER_VOTES_TABLE,
+                self.db,
+                if_exists="append",
+                index=False,
+            )
+
+    def every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
+        bills = self.db.execute(
+            "SELECT DISTINCT v.[Parliament], v.[Session], v.[Bill Number] "
+            f"FROM {MEMBER_VOTES_TABLE} mv "
+            f"LEFT JOIN {VOTES_HELD_TABLE} v ON v.[Vote ID] = mv.[Vote ID] "
+            "WHERE [Bill Number] IS NOT NULL "
+            "AND [Member ID] IS NOT NULL "
+            "ORDER BY v.[Parliament] DESC "
+        ).fetchall()
+        return [BillId(*bill) for bill in bills]
+
+
+    def insert_bill_summaries(self, summaries: dict[BillId, str]) -> None:
+        bill_summaries = [
+            {
+                "summary": summary,
+                "bill_id": str(bill)
+            }
+            for bill, summary in summaries.items()
+        ]
+        self.db.executemany(
+            f"UPDATE {BILLS_TABLE} SET Summary = :summary WHERE [Bill ID] = :bill_id", 
+            bill_summaries)
+        print(f"Inserted {len(bill_summaries)} bill summaries")
+
+
+    def optimize(self):
+        # totally pointless given we have no performance issues but I couldn't help myself
+        self.db.execute("VACUUM")
+        self.db.execute("ANALYZE")
+        print("Optimized database.")
+
+
+
+def parse_parl_datetime(date_str: str) -> Optional[pd.Timestamp]:
+    """Parses strings in parliamentary datetime format, e.g. 2024-12-17 3:50:01 p.m."""
+    if not date_str or pd.isna(date_str):
+        return None
+    date_str = date_str.replace("p.m.", "PM").replace("a.m.", "AM")
+    return pd.to_datetime(date_str, format="%Y-%m-%d %I:%M:%S %p").tz_localize("Canada/Eastern")

@@ -3,9 +3,9 @@ from os import path
 import pandas as pd
 import sqlite3
 from contextlib import contextmanager
-from typing import NamedTuple, Optional
+from typing import Iterator, NamedTuple, Optional
 import re
-import httpx
+from httpx import AsyncClient
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 PARLIMENTARY_SESSIONS = (
@@ -24,8 +24,10 @@ PARLIMENTARY_SESSIONS = (
     # "38-1",
 )
 
+LATEST_PARLIAMENT = int(max(PARLIMENTARY_SESSIONS).split("-")[0])
+assert LATEST_PARLIAMENT == 44
+
 DATA_DIR = "repsheet_backend/data"
-EXPORT_DB = "repsheet.sqlite"
 GCP_BILLING_PROJECT = "repsheet-app-prod"
 CACHE_BUCKET = "repsheet-cache"
 
@@ -34,28 +36,19 @@ BILLS_TABLE = "bills"
 MEMBER_VOTES_TABLE = "member_votes"
 MEMBERS_TABLE = "members"
 
-JUSTIN = "Justin Trudeau (Papineau)"
-PIERRE = "Pierre Poilievre (Carleton)"
-LIZ = "Elizabeth May (Saanich—Gulf Islands)"
+JT = "Justin Trudeau (Papineau)"
+PP = "Pierre Poilievre (Carleton)"
+EM = "Elizabeth May (Saanich—Gulf Islands)"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-@contextmanager
-def db_connect():
-    """Context manager for database connection."""
-    db = sqlite3.connect(EXPORT_DB)
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-    finally:
-        db.commit()
-        db.close()
+httpx = AsyncClient()
 
-def print_table_schema(table_name):
-    """Print the schema of a given table."""
-    with db_connect() as db:
-        cursor = db.cursor()
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        rows = cursor.fetchall()
-        for row in rows:
-            print(f"{row[1]}: {row[2]} {'NOT NULL' if row[3] else 'NULL'} {'PRIMARY KEY' if row[5] else ''}")
+
+class BillId(NamedTuple):
+    parliament: int
+    session: int
+    bill_number: str
+
+    def __str__(self):
+        return f"{self.parliament}-{self.session}-{self.bill_number}"

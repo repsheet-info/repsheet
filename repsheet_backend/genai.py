@@ -19,9 +19,7 @@ CONTEXT_WINDOW = {GEMINI_FLASH_2: 1e6}
 
 MAX_CONCURRENT_REQUESTS = 16
 
-google_ai = genai.Client(
-    vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1"
-)
+google_ai = genai.Client(vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1")
 
 anthropic = Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY", "none"),
@@ -37,35 +35,38 @@ genai_cache = GCSCache(
     mode="json",
 )
 
-@retry(
-    stop=stop_after_attempt(10),
-    wait=wait_exponential()
-)
+
+@retry(stop=stop_after_attempt(10), wait=wait_exponential())
 def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     """Generate text using Google Gemini."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
     try:
         response = google_ai.models.generate_content(model=model, contents=prompt)
     except ClientError as e:
-        if e.code == 400 and e.message is not None and "exceeds the maximum number of tokens allowed" in e.message:
+        if (
+            e.code == 400
+            and e.message is not None
+            and "exceeds the maximum number of tokens allowed" in e.message
+        ):
             return None
         raise e
     print(f"Received response from {model} ({len(response.text or "")} chars)")
     return response.text
 
 
-def _generate_text_anthropic(prompt: str, model: str, output_tokens: Optional[int] = None) -> Optional[str]:
+def _generate_text_anthropic(
+    prompt: str, model: str, output_tokens: Optional[int] = None
+) -> Optional[str]:
     """Generate text using Anthropic."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
     response = anthropic.messages.create(
-        model=model, 
+        model=model,
         max_tokens=output_tokens or 8192,
         messages=[{"role": "user", "content": prompt}],
     )
-    result = response.content[0].text # type: ignore
+    result = response.content[0].text  # type: ignore
     print(f"Received response from {model} ({len(result)} chars)")
     return result
-    
 
 
 def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
@@ -74,7 +75,7 @@ def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
     # Example cost estimation logic
     response = google_ai.models.count_tokens(model=model, contents=prompt)
     tokens = response.total_tokens
-    if tokens is None:  
+    if tokens is None:
         raise ValueError("Failed to count tokens")
     if tokens > CONTEXT_WINDOW[model]:
         raise ValueError(f"Prompt exceeds context window of {CONTEXT_WINDOW[model]} tokens")
@@ -82,9 +83,7 @@ def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
     return cost
 
 
-async def estimate_cost_usd_input_only(
-    prompt: str, model: str = GEMINI_FLASH_2
-) -> float:
+async def estimate_cost_usd_input_only(prompt: str, model: str = GEMINI_FLASH_2) -> float:
     """Estimate the cost of generating text using Google Gemini."""
     cache_key = {
         "method": "estimate_cost_usd_input_only",
@@ -100,7 +99,9 @@ async def estimate_cost_usd_input_only(
     return cost
 
 
-async def generate_text(prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None) -> Optional[str]:
+async def generate_text(
+    prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None
+) -> Optional[str]:
     cache_key = {
         "method": "generate_text",
         "model": model,
@@ -111,7 +112,9 @@ async def generate_text(prompt: str, model: str = GEMINI_FLASH_2, output_tokens:
         return cached_response
     async with api_semaphore:
         if model.startswith("claude"):
-            response = await asyncio.to_thread(_generate_text_anthropic, prompt, model, output_tokens)
+            response = await asyncio.to_thread(
+                _generate_text_anthropic, prompt, model, output_tokens
+            )
         else:
             response = await asyncio.to_thread(_generate_text_google, prompt, model)
     if response is not None:

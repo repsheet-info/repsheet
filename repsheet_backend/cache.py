@@ -3,7 +3,7 @@ from typing import Any, Callable, Literal, Optional, Protocol
 
 from google.cloud import storage
 from google.cloud.storage.blob import BlobWriter
-from google.cloud.exceptions import NotFound    
+from google.cloud.exceptions import NotFound
 
 import asyncio
 import hashlib
@@ -21,7 +21,7 @@ If a dictionary is used, the key will be generated using cache_key to hash the o
 """
 
 
-def cache_key(key_obj: Any) -> tuple[str, bytes]:   
+def cache_key(key_obj: Any) -> tuple[str, bytes]:
     """
     Returns a cache key and a JSON representation of the key object.
     """
@@ -34,11 +34,14 @@ def cache_key(key_obj: Any) -> tuple[str, bytes]:
 def pickle_and_compress(value: Any) -> bytes:
     return lzma.compress(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL))
 
+
 def dump_json_and_compress(value: Any) -> bytes:
     return lzma.compress(orjson.dumps(value))
 
+
 def decompress_and_unpickle(data: bytes) -> Any:
     return pickle.loads(lzma.decompress(data))
+
 
 def decompress_and_load_json(data: bytes) -> Any:
     return orjson.loads(lzma.decompress(data))
@@ -48,6 +51,7 @@ class GCSCache:
     """Simple caching mechanism using pickle and Google Cloud Storage.
     Cache keys can be any JSON serializable object, and values can be anything pickleable.
     """
+
     mode: Literal["pickle", "json"]
     cache_bucket: str
     key_prefix: str
@@ -117,7 +121,7 @@ class GCSCache:
 
     async def get(self, key: CacheKey) -> Any:
         """Get a value from the cache.
-        
+
         Args:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
@@ -125,22 +129,23 @@ class GCSCache:
 
     def cache_async_function(self, get_key: Optional[Callable] = None):
         """Decorator to cache the return value of an async function.
-        
+
         Args:
             get_key: A function that takes the same arguments as the decorated function and returns a `CacheKey`.
                 If None, a default key will be generated from the function name, filename, and arguments.
         """
+
         def decorator(async_func):
             @wraps(async_func)
             async def wrapper(*args, **kwargs):
                 if get_key is not None:
                     key = get_key(*args, **kwargs)
                 else:
-                    key = dict( 
+                    key = dict(
                         name=async_func.__name__,
                         location=async_func.__code__.co_filename,
                         args=args,
-                        kwargs=kwargs
+                        kwargs=kwargs,
                     )
                 result = await self.get(key)
                 if result is None:

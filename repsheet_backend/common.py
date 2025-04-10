@@ -3,9 +3,10 @@ from os import path
 import pandas as pd
 import sqlite3
 from contextlib import contextmanager
-from typing import Iterator, NamedTuple, Optional
+from typing import Iterator, Literal, NamedTuple, Optional
 import re
 from httpx import AsyncClient
+from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 PARLIMENTARY_SESSIONS = (
@@ -52,3 +53,34 @@ class BillId(NamedTuple):
 
     def __str__(self):
         return f"{self.parliament}-{self.session}-{self.bill_number}"
+
+
+class BillIssues(BaseModel):
+    climateAndEnergy: Optional[str]
+    affordabilityAndHousing: Optional[str]
+    defense: Optional[str]
+    healthcare: Optional[str]
+    immigration: Optional[str]
+    infrastructure: Optional[str]
+    spendingAndTaxation: Optional[str]
+    indigenousRelations: Optional[str]
+    crimeAndJustice: Optional[str]
+    civilRights: Optional[str]
+
+
+class BillSummary(BaseModel):
+    summary: str
+    issues: BillIssues
+
+
+class BillVotingRecord(BaseModel):
+    summary: str
+    billID: str
+    billNumber: str
+    voted: Literal["yea", "nay", "abstain"]
+    issues: BillIssues
+
+
+class MemberSummary(BaseModel):
+    summary: str
+    issues: BillIssues

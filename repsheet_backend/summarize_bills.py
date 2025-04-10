@@ -3,7 +3,7 @@ import re
 from typing import Optional
 from pydantic import BaseModel
 
-from repsheet_backend.common import BillId
+from repsheet_backend.common import BillId, BillSummary
 from repsheet_backend.fetch_data import fetch_latest_bill_text
 from repsheet_backend.genai import generate_text, GEMINI_FLASH_2
 
@@ -14,24 +14,6 @@ with open("prompts/summarize-bill/001.txt", "r") as f:
 xref_external_regex = re.compile(r"<XRefExternal[^>]*>(.*?)<\/XRefExternal>")
 trailing_comma_regex = re.compile(r",\s*}")
 missing_comma_regex = re.compile(r'"\s*"')
-
-
-class BillIssues(BaseModel):
-    climateAndEnergy: Optional[str]
-    affordabilityAndHousing: Optional[str]
-    defense: Optional[str]
-    healthcare: Optional[str]
-    immigration: Optional[str]
-    infrastructure: Optional[str]
-    spendingAndTaxation: Optional[str]
-    indigenousRelations: Optional[str]
-    crimeAndJustice: Optional[str]
-    civilRights: Optional[str]
-
-
-class BillSummary(BaseModel):
-    summary: str
-    issues: BillIssues
 
 
 def simplify_bill_xml(xml_text: str) -> str:
@@ -55,6 +37,7 @@ async def summarize_bill(bill: BillId) -> Optional[BillSummary]:
     # and is not too costly
     response = await generate_text(prompt, model=GEMINI_FLASH_2)
     if response is None:
+        print(f"Error generating summary for {bill}, likely exceeded token count")
         return None
     return cleanup_and_validate_summary_json(response)
 

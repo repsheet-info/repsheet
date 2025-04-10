@@ -117,6 +117,5 @@ async def generate_text(
             )
         else:
             response = await asyncio.to_thread(_generate_text_google, prompt, model)
-    if response is not None:
-        await genai_cache.set(cache_key, response)
+    await genai_cache.set(cache_key, response)
     return response

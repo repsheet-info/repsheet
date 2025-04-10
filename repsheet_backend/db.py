@@ -15,6 +15,8 @@ from repsheet_backend.common import (
     LATEST_PARLIAMENT,
     VOTES_HELD_TABLE,
     BillId,
+    BillSummary,
+    BillVotingRecord,
 )
 
 FULL_MEMBER_NAME_REGEX = re.compile(r"^([^ ]+\. )?([^\(]+)(\([^\)]+\))?$")
@@ -22,6 +24,37 @@ HOUSE_CHAMBER_ID = 1
 SENATE_CHAMBER_ID = 2
 REPSHEET_DB = "repsheet.sqlite"
 
+MEMBER_BILL_VOTING_QUERY = f"""
+WITH most_recent_vote AS (
+SELECT              
+    b.[Bill ID] AS bill_id,
+    MAX(v.[Vote ID]) AS vote_id
+FROM {MEMBER_VOTES_TABLE} AS mv
+JOIN {VOTES_HELD_TABLE} v
+    ON mv.[Vote ID] = v.[Vote ID]
+JOIN {BILLS_TABLE} AS b
+    ON v.[Bill ID] = b.[Bill ID]
+WHERE
+    mv.[Member ID] = :member_id
+GROUP BY 
+    b.[Bill ID]
+)
+
+SELECT 
+    b.[Bill ID] AS bill_id,
+    b.[Bill Number] AS bill_number,
+    b.[Summary] AS full_summary,
+    mv.[Member Voted] AS voted
+FROM most_recent_vote
+JOIN {MEMBER_VOTES_TABLE} AS mv
+    ON most_recent_vote.vote_id = mv.[Vote ID]
+JOIN {BILLS_TABLE} AS b
+    ON most_recent_vote.bill_id = b.[Bill ID]
+WHERE
+    mv.[Member ID] = :member_id
+AND
+    b.[Summary] IS NOT NULL
+"""
 
 class RepsheetDB:
     db: sqlite3.Connection
@@ -275,7 +308,7 @@ class RepsheetDB:
                 index=False,
             )
 
-    def every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
+    def get_every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
         bills = self.db.execute(
             "SELECT DISTINCT v.[Parliament], v.[Session], v.[Bill Number] "
             f"FROM {MEMBER_VOTES_TABLE} mv "
@@ -298,8 +331,35 @@ class RepsheetDB:
         self.db.executemany(
             f"UPDATE {BILLS_TABLE} SET Summary = :summary WHERE [Bill ID] = :bill_id", 
             bill_summaries)
+        self.db.commit()
         print(f"Inserted {len(bill_summaries)} bill summaries")
 
+    
+    def get_member_voting_record(self, member_id: str) -> list[BillVotingRecord]:
+        rows = self.db.execute(MEMBER_BILL_VOTING_QUERY, {"member_id": member_id}).fetchall()
+        voting_record: list[BillVotingRecord] = []
+        for row in rows:
+            full_summary = BillSummary.model_validate_json(row["full_summary"])
+            voted = row["voted"].lower() if row["voted"] else "abstain" 
+            voting_record.append(
+                BillVotingRecord(
+                    summary=full_summary.summary,
+                    billID=row["bill_id"],
+                    billNumber=row["bill_number"],
+                    voted=voted,
+                    issues=full_summary.issues,
+                )
+            )
+        bill_ids = [vote.billID for vote in voting_record]
+        assert len(set(bill_ids)) == len(bill_ids), "Duplicate bill IDs found in voting record"
+        return voting_record
+    
+
+    def insert_member_summaries(self, member_summaries: dict[str, str]) -> None:
+        # Insert the new summaries
+        self.db.executemany(f"UPDATE {MEMBERS_TABLE} SET Summary = :summary WHERE [Member ID] = :member_id", member_summaries)
+        self.db.commit()
+        print(f"Inserted {len(member_summaries)} member summaries")
 
     def optimize(self):
         # totally pointless given we have no performance issues but I couldn't help myself

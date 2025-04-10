@@ -11,6 +11,7 @@ from anthropic import Anthropic
 GEMINI_FLASH_2 = "gemini-2.0-flash"
 GEMINI_PRO_2_5 = "gemini-2.5-pro-preview-03-25"
 CLAUDE_SONNET = "claude-3-7-sonnet-latest"
+CLAUDE_HAIKU = "claude-3-5-haiku-latest"
 
 COST_PER_MTOK = {GEMINI_FLASH_2: 0.15}
 
@@ -53,12 +54,12 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     return response.text
 
 
-def _generate_text_anthropic(prompt: str, model: str) -> Optional[str]:
+def _generate_text_anthropic(prompt: str, model: str, output_tokens: Optional[int] = None) -> Optional[str]:
     """Generate text using Anthropic."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
     response = anthropic.messages.create(
         model=model, 
-        max_tokens=8192,
+        max_tokens=output_tokens or 8192,
         messages=[{"role": "user", "content": prompt}],
     )
     result = response.content[0].text # type: ignore
@@ -99,7 +100,7 @@ async def estimate_cost_usd_input_only(
     return cost
 
 
-async def generate_text(prompt: str, model: str = GEMINI_FLASH_2) -> Optional[str]:
+async def generate_text(prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None) -> Optional[str]:
     cache_key = {
         "method": "generate_text",
         "model": model,
@@ -110,7 +111,7 @@ async def generate_text(prompt: str, model: str = GEMINI_FLASH_2) -> Optional[st
         return cached_response
     async with api_semaphore:
         if model.startswith("claude"):
-            response = await asyncio.to_thread(_generate_text_anthropic, prompt, model)
+            response = await asyncio.to_thread(_generate_text_anthropic, prompt, model, output_tokens)
         else:
             response = await asyncio.to_thread(_generate_text_google, prompt, model)
     if response is not None:

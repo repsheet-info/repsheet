@@ -36,6 +36,7 @@ MEMBERS_TABLE = "members"
 
 JUSTIN = "Justin Trudeau (Papineau)"
 PIERRE = "Pierre Poilievre (Carleton)"
+LIZ = "Elizabeth May (Saanich—Gulf Islands)"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 

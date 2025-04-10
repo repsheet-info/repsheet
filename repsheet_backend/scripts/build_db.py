@@ -18,7 +18,6 @@ async def build_repsheet_db():
         votes_held = db.get_all_votes_held()
         member_votes = await fetch_all_member_votes_by_vote_id(votes_held)
         db.create_member_votes_table(member_votes)
-        db.optimize()
 
 if __name__ == "__main__":
     if os.path.exists(REPSHEET_DB):

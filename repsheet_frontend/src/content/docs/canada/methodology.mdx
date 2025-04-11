@@ -4,4 +4,80 @@ hasSidebar: false
 pagefind: false
 ---
 
-## Methodology
+import { LinkButton } from "@astrojs/starlight/components";
+
+Repsheet uses AI summarization to create unbiased summaries of Canadian MPs, based on their voting records.
+
+This site, as well as the prompts used to generate the summaries, are all open source and available for you to see. We want these summaries to be as transparent and unbiased as possible, and welcome your help and suggestions to accomplish that.
+
+<LinkButton
+  href="https://github.com/repsheet-info/repsheet"
+  target="_blank"
+  rel="noopener noreferrer"
+  variant="secondary"
+  icon="github"
+>
+  View the source code
+</LinkButton>
+
+<LinkButton
+  href="https://forms.gle/spefTkVXmnWjLS5C8"
+  target="_blank"
+  rel="noopener noreferrer"
+  variant="secondary"
+>
+  Provide feedback
+</LinkButton>
+
+## Overview
+
+Generating summaries of MPs is a four-step process:
+
+1. **Data collection**: We collect the voting records for each MP and bill records from the House of Commons.
+2. **Bill summarization**: We use AI to summarize the bill records (1st prompt).
+3. **Bill summarization merging**: We merge the bill summaries together and ask the AI to further summarize the content (2nd prompt).
+4. **MP summarization**: We combine the final bill summaries with the MP's voting records to create a summary of the MP (3rd prompt).
+
+## 1. Data collection
+
+- Current MPs are collected from <a href="https://www.ourcommons.ca/Members" target="_blank" rel="noopener noreferrer">ourcommons.ca</a>.
+- Bill records are collected from <a href="https://www.parl.ca/legisinfo/en/bills" target="_blank" rel="noopener noreferrer">parl.ca</a>. We only fetch bills from the last 4 parliaments.
+- Votes are collected from <a href="https://www.ourcommons.ca/Members/en/votes" target="_blank" rel="noopener noreferrer">ourcommons.ca</a>.
+
+You can view our data collection code <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/fetch_data.py" target="_blank" rel="noopener noreferrer">here</a>.
+
+## 2. Bill summarization
+
+Model: Gemini Flash 2
+
+For each bill, we use AI to create a summary.
+
+The bills are summarized into issues, which allows us to highlight how MPs vote on those issues.
+
+Before prompting the AI, we cleanup the bill XML to remove some XML tags that do not contain bill content. We clean this up to decrease the size of the prompt.
+
+You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/summarize-bill/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
+
+You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_bills.py" target="_blank" rel="noopener noreferrer">here</a>.
+
+## 3. Bill summarization merging
+
+Model: Claude Haiku
+
+Merging bill summaries together helps decrease the size of the final prompt, allowing us to use more sophisticated models for the final MP summarization.
+
+You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/merge-summaries/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
+
+You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
+
+## 4. MP summarization
+
+Model: Claude Sonnet
+
+The final step is to combine the bill summaries with the MP's voting records to create a summary of the MP.
+
+We
+
+You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/summarize-member/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
+
+You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.

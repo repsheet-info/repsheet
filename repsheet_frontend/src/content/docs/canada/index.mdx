@@ -6,6 +6,7 @@ hero:
   tagline: Discover how your representatives vote in Parliament
   image:
     file: ../../../assets/jason-hafso-C2keINMOhIE-unsplash.jpg
+    alt: Peace tower with the Canadian flag in front
   actions:
     - text: Methodology
       link: /canada/methodology
@@ -16,9 +17,24 @@ hero:
 import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import PoliticianSummary from "../../../components/PoliticianSummary.astro";
 
-## Party leaders
+## Major party leaders
 
-<CardGrid>
+<CardGrid className="parties-list">
+  <LinkCard
+    title="Maxime Bernier"
+    description="Leader of the People's Party of Canada"
+    href="/canada/representative/maxime_bernier"
+  />
+  <PoliticianSummary
+    name="Yves-François Blanchet"
+    link="/canada/representative/Yves-François_Blanchet"
+    description="Leader of the Bloc Québécois"
+  />
+  <LinkCard
+    title="Mark Carney"
+    description="Leader of the Liberal Party of Canada"
+    href="/canada/representative/mark_carney"
+  />
   <PoliticianSummary
     name="Elizabeth May"
     link="/canada/representative/Elizabeth_May"
@@ -29,11 +45,12 @@ import PoliticianSummary from "../../../components/PoliticianSummary.astro";
     link="/canada/representative/Pierre_Poilievre"
     description="Leader of the Conservative Party of Canada"
   />
-  <LinkCard
-    title="Mark Carney"
-    description="Leader of the Liberal Party of Canada"
-    href="/canada/representative/mark_carney"
+  <PoliticianSummary
+    name="Jagmeet Singh"
+    link="/canada/representative/Jagmeet_Singh"
+    description="Leader of the New Democratic Party of Canada"
   />
+
 </CardGrid>
 
 ## Search for your representative

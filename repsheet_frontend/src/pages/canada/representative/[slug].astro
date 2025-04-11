@@ -34,11 +34,20 @@ export function getStaticPaths() {
 const summary = member.Summary != null ? JSON.parse(member.Summary) : {};
 const issues = Object.keys(summary?.issues || []).filter((issue) => summary.issues[issue as Issues] !== null);
 
+const constituency = member.Constituency;
+const province = member['Province / Territory'];
+
 ---
 
 <StarlightPage frontmatter={{ title: name, description: member.Constituency }}>
   <PartyBadge party={member['Political Affiliation']} />
-  Representing {member.Constituency} in {member['Province / Territory']}
+  <br />
+  <dl>
+    <dt>Current constituency</dt> 
+    <dd>{constituency}</dd>
+    <dt>Province / Territory</dt>
+    <dd>{province}</dd>
+  </dl>
   {summary.summary && <FormattedSummary summary={summary.summary} />}
   <h2>Issues</h2>
   <Stack>

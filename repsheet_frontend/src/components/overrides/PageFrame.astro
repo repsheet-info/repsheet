@@ -1,0 +1,11 @@
+---
+import FeedbackButton from '../FeedbackButton.astro';
+import StarlightPageFrame from '@astrojs/starlight/components/PageFrame.astro';
+---
+
+<StarlightPageFrame>
+  <slot name="header" slot="header" />
+  <slot name="sidebar" slot="sidebar" />
+  <slot />
+  <FeedbackButton /> 
+</StarlightPageFrame>

@@ -1,0 +1,38 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<a
+  href="https://forms.gle/spefTkVXmnWjLS5C8"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="feedback-button"
+  aria-label="Provide feedback"
+>
+  Feedback&nbsp;&nbsp;<Icon name="comment" /> 
+</a>
+
+<style>
+  .feedback-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background-color: var(--sl-color-accent);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease-in-out;
+  }
+
+  @media (max-width: 768px) {
+    .feedback-button {
+      bottom: 1rem;
+      right: 1rem;
+    }
+  }
+</style> 

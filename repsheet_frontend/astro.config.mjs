@@ -17,6 +17,7 @@ export default defineConfig({
       tableOfContents: false,
       components: {
         PageTitle: "./src/components/overrides/PageTitle.astro",
+        PageFrame: "./src/components/overrides/PageFrame.astro",
       },
     }),
   ],

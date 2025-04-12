@@ -35,8 +35,8 @@ Generating summaries of MPs is a four-step process:
 
 1. **Data collection**: We collect the voting records for each MP and bill records from the House of Commons.
 2. **Bill summarization**: We use AI to summarize the bill records (1st prompt).
-3. **Bill summarization merging**: We merge the bill summaries together and ask the AI to further summarize the content (2nd prompt).
-4. **MP summarization**: We combine the final bill summaries with the MP's voting records to create a summary of the MP (3rd prompt).
+3. **MP summarization stage 1**: We split the bills into batches, and ask the AI to summarize the MP for each batch separately (2nd prompt). 
+4. **MP summarization stage 2**: Finally, we take these MP summaries and ask the AI to merge them into a final combined summary of the MP (3rd prompt).
 
 ## 1. Data collection
 
@@ -48,9 +48,9 @@ You can view our data collection code <a href="https://github.com/repsheet-info/
 
 ## 2. Bill summarization
 
-Model: Gemini Flash 2
+Model: <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash" target="_blank"  rel="noopener noreferrer">Gemini Flash 2.0</a>
 
-For each bill, we use AI to create a summary.
+For each bill voted on by a current MP over the previous four Parliaments, we use AI to create a summary.
 
 The bills are summarized into issues, which allows us to highlight how MPs vote on those issues.
 
@@ -60,24 +60,50 @@ You can view the prompt used for this step <a href="https://github.com/repsheet-
 
 You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_bills.py" target="_blank" rel="noopener noreferrer">here</a>.
 
-## 3. Bill summarization merging
+We use Gemini Flash 2.0 as it can process a large amount of input text (1M tokens, about 4M characters) and some bills were quite large.
 
-Model: Claude Haiku
+## 3. MP summarization stage 1
 
-Merging bill summaries together helps decrease the size of the final prompt, allowing us to use more sophisticated models for the final MP summarization.
+Model: <a href="https://www.anthropic.com/claude/haiku" target="_blank"  rel="noopener noreferrer">Claude Haiku</a>
+
+For each member, we take the summaries of the bills voted on when they were an MP, and combine them with:
+* The bill title
+* The bill number
+* The MP's vote (Yea/Nay/Abstain)
+* The voting statistics of the MP's party (yeas/nays/abstains, party name not included)
+* The voting statistics of all other parties (yeas/nays/abstains, party name not included)
+* Whether this bill was a private member's bill sponsored by this MP
+
+We then split this into batches and ask the AI to summarize the MP for each batch separately.
+
+You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/summarize-member/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
+
+You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
+
+We use Claude Haiku as we found it provided high quality summaries and was fast and reasonably priced, as we need to run a large number of these summaries.
+
+### Why two stages?
+
+We found experimentally that Anthropic's Claude models were able to give the most informative summaries, but they are limited to a maximum of 200000 input "tokens" (one token is roughly 4 characters).
+This means that we were not able to provide the entire voting history in one prompt. 
+We found that splitting the voting history into batches of bills worked well, and allowed us to get around the token limit.
+
+At the moment we are using 23 batches, which we calculated as the maximum number of batches that we could provide to the AI which merges the summaries.
+This final summary merging step also has a maximum token count of 200000,
+and this initial summary step has a maximum output token count of 8192 tokens, and 200000 / 8192 is 24 (rounded down), 
+then we subtract 1 to allow wrapper prompt that comes before the summary.
+So, 23 batches gives 23 * 8192 = 188416 tokens of summaries, leaving some space for the prompt that comes beforehand.
+
+
+## 4. MP summarization stage 2
+
+Model: <a href="https://www.anthropic.com/claude/sonnet" target="_blank"  rel="noopener noreferrer">Claude Sonnet</a>
+
+The final step is to combine the separate "batched" MP summaries of the MP's voting records into one unified summary of the MP.
 
 You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/merge-summaries/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
 
 You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
 
-## 4. MP summarization
-
-Model: Claude Sonnet
-
-The final step is to combine the bill summaries with the MP's voting records to create a summary of the MP.
-
-We
-
-You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/summarize-member/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
-
-You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
+We use Clause Sonnet as it is more sophisticated than Claude Haiku, creating higher quality summaries, 
+so it is a better choice for the step that produces the final output.

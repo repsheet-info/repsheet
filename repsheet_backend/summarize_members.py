@@ -41,7 +41,7 @@ def get_member_summarisation_prompts(voting_record: list[BillVotingRecord]) -> l
     Random(RANDOM_SEED).shuffle(voting_record_objs)
     result = []
     for obj_batch in batched(voting_record_objs, BATCH_COUNT):
-        batch_json = json.dumps(obj_batch, indent=2)
+        batch_json = json.dumps(obj_batch, indent=2, sort_keys=True)
         result.append(SUMMARIZE_MEMBER_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", batch_json))
     return result
 
@@ -49,7 +49,7 @@ def get_member_summarisation_prompts(voting_record: list[BillVotingRecord]) -> l
 def get_summary_merge_prompt(summaries: list[MemberSummary]) -> str:
     """Generate the promp for merging multiple summaries together into a single summary."""
     summaries_json = [summary.model_dump(mode="json") for summary in summaries]
-    summaries_json = json.dumps(summaries_json, indent=2)
+    summaries_json = json.dumps(summaries_json, indent=2, sort_keys=True)
     return MERGE_SUMMARIES_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", summaries_json)
 
 

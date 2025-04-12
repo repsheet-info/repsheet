@@ -5,8 +5,8 @@ from repsheet_backend.cache import GCSCache
 from repsheet_backend.common import GCP_BILLING_PROJECT, CACHE_BUCKET
 from google import genai
 from google.genai.errors import ClientError
-from tenacity import retry, wait_exponential, stop_after_attempt
-from anthropic import Anthropic
+from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
+from anthropic import Anthropic, RateLimitError
 
 GEMINI_FLASH_2 = "gemini-2.0-flash"
 GEMINI_PRO_2_5 = "gemini-2.5-pro-preview-03-25"
@@ -16,6 +16,11 @@ CLAUDE_HAIKU = "claude-3-5-haiku-20241022"
 COST_PER_MTOK = {GEMINI_FLASH_2: 0.15}
 
 CONTEXT_WINDOW = {GEMINI_FLASH_2: 1e6}
+
+MAX_OUTPUT_TOKENS = {
+    CLAUDE_HAIKU: 8192,
+    CLAUDE_SONNET: 8192,
+}
 
 MAX_CONCURRENT_REQUESTS = 16
 
@@ -36,7 +41,6 @@ genai_cache = GCSCache(
 )
 
 
-@retry(stop=stop_after_attempt(10), wait=wait_exponential())
 def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     """Generate text using Google Gemini."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
@@ -49,12 +53,18 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
             and "exceeds the maximum number of tokens allowed" in e.message
         ):
             return None
+        if e.code == 429:
+            print("Rate limit exceeded, retrying...")
+        print("Error generating text:", e)
         raise e
     print(f"Received response from {model} ({len(response.text or "")} chars)")
     return response.text
 
 
-@retry(stop=stop_after_attempt(10), wait=wait_exponential())
+@retry(
+        stop=stop_after_attempt(10), 
+        wait=wait_exponential(min=5, max=5*60), 
+        retry=retry_if_exception_type(RateLimitError))
 def _generate_text_anthropic(
     prompt: str, model: str, output_tokens: Optional[int] = None
 ) -> Optional[str]:
@@ -62,7 +72,7 @@ def _generate_text_anthropic(
     print(f"Generating text with {model} ({len(prompt)} chars)")
     response = anthropic.messages.create(
         model=model,
-        max_tokens=output_tokens or 8192,
+        max_tokens=output_tokens or MAX_OUTPUT_TOKENS[model],
         messages=[{"role": "user", "content": prompt}],
     )
     result = response.content[0].text  # type: ignore
@@ -126,3 +136,4 @@ async def generate_text(
             response = await asyncio.to_thread(_generate_text_google, prompt, model)
     await genai_cache.set(cache_key, response)
     return response
+ 

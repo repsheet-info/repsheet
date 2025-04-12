@@ -116,6 +116,10 @@ class GCSCache:
             return data
         except NotFound:
             return None
+        
+    async def init(self):
+        """Checks if we can connect to the bucket. Doesn't actually "initialize" anything per se."""
+        await asyncio.to_thread(self.bucket.reload)
 
     async def set(self, key: CacheKey, value: Any):
         """Set a value in the cache.

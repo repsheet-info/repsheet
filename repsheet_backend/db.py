@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from datetime import datetime
 import re
 import sqlite3
-from typing import Iterator, Optional
+from typing import Iterable, Iterator, Optional
 import pandas as pd
 from tqdm import tqdm
 
@@ -18,6 +18,7 @@ from repsheet_backend.common import (
     BillId,
     BillSummary,
     BillVotingRecord,
+    MemberSummary,
     PartyVotes,
 )
 
@@ -60,12 +61,14 @@ WHERE
     mv.[Member ID] = :member_id
 AND
     b.[Summary] IS NOT NULL
+ORDER BY
+    b.[Bill ID] DESC
 """
 
 class RepsheetDB:
     db: sqlite3.Connection
     _full_member_name_cache: dict[str, str | None]
-    _voting_stats_cache: dict[str, dict[str, PartyVotes]]
+    _voting_stats_cache: dict[str, list[tuple[str, PartyVotes]]]
 
     def __init__(self, db: sqlite3.Connection):
         self.db = db
@@ -345,7 +348,7 @@ class RepsheetDB:
         self.db.commit()
         print(f"Inserted {len(bill_summaries)} bill summaries")
 
-    def get_voting_stats(self, vote_id) -> dict[str, PartyVotes]:
+    def get_voting_stats(self, vote_id) -> list[tuple[str, PartyVotes]]:
         if vote_id not in self._voting_stats_cache:
             rows = self.db.execute(f"""
                 SELECT 
@@ -355,22 +358,27 @@ class RepsheetDB:
                     COUNT(*) AS count
                 FROM {MEMBER_VOTES_TABLE} 
                 WHERE [Vote ID] = :vote_id
-                GROUP BY vote_id, party, vote""", {"vote_id": vote_id}).fetchall()
+                GROUP BY vote_id, party, vote
+                ORDER BY vote_id, party, vote""", {"vote_id": vote_id}).fetchall()
             votes = {
                 (row["party"], row["vote"]): row["count"]
                 for row in rows
             }
-            parties = set(row["party"] for row in rows)
+            # sorted to preserve determinism of output order
+            parties = sorted(list(set(row["party"] for row in rows)))
             assert len(parties) > 0, f"No votes found for vote ID {vote_id}"
             assert set(row["vote"] for row in rows) <= {"Yea", "Nay", None}, f"Unexpected vote values: {set(row['vote'] for row in rows)}"
-            stats = {
-                party: PartyVotes.build(
-                    yea=votes.get((party, "Yea"), 0),
-                    nay=votes.get((party, "Nay"), 0),
-                    abstain=votes.get((party, None), 0),
+            stats = [
+                (
+                    party, 
+                    PartyVotes.build(
+                        yea=votes.get((party, "Yea"), 0),
+                        nay=votes.get((party, "Nay"), 0),
+                        abstain=votes.get((party, None), 0),
+                    )
                 )
                 for party in parties
-            }
+            ]
             self._voting_stats_cache[vote_id] = stats
         return self._voting_stats_cache[vote_id]
 
@@ -386,7 +394,7 @@ class RepsheetDB:
             voting_by_party = self.get_voting_stats(row["vote_id"])
             other_party_votes = []
             member_party_votes = None
-            for party, party_votes in voting_by_party.items():
+            for party, party_votes in voting_by_party:
                 if party == member_party:
                     member_party_votes = party_votes
                 else:
@@ -412,11 +420,15 @@ class RepsheetDB:
         return voting_record
     
 
-    def insert_member_summaries(self, member_summaries: dict[str, str]) -> None:
-        # Insert the new summaries
-        self.db.executemany(f"UPDATE {MEMBERS_TABLE} SET Summary = :summary WHERE [Member ID] = :member_id", member_summaries)
+    def insert_member_summaries(self, member_summaries: Iterable[tuple[str, MemberSummary]]) -> None:
+        summaries_for_db = [
+            {"member_id": member_id, "summary": summary.model_dump_json()}
+            for member_id, summary in member_summaries
+            if summary is not None
+        ]
+        self.db.executemany(f"UPDATE {MEMBERS_TABLE} SET Summary = :summary WHERE [Member ID] = :member_id", summaries_for_db)
         self.db.commit()
-        print(f"Inserted {len(member_summaries)} member summaries")
+        print(f"Inserted {len(summaries_for_db)} member summaries")
 
     def optimize(self):
         # totally pointless given we have no performance issues but I couldn't help myself

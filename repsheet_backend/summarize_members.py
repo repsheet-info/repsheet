@@ -17,8 +17,7 @@ with open("prompts/merge-summaries/001.txt", "r") as f:
     MERGE_SUMMARIES_PROMPT_TEMPLATE = f.read()
 
 
-
-BATCH_COUNT = int(floor(200000 / 8192) - 1)
+BATCH_COUNT = int(floor(200000 / 8192)) - 1
 
 # fixed to make sure batches are deterministic
 # to allow for caching of AI responses

@@ -10,8 +10,8 @@ from anthropic import Anthropic
 
 GEMINI_FLASH_2 = "gemini-2.0-flash"
 GEMINI_PRO_2_5 = "gemini-2.5-pro-preview-03-25"
-CLAUDE_SONNET = "claude-3-7-sonnet-latest"
-CLAUDE_HAIKU = "claude-3-5-haiku-latest"
+CLAUDE_SONNET = "claude-3-7-sonnet-20250219"
+CLAUDE_HAIKU = "claude-3-5-haiku-20241022"
 
 COST_PER_MTOK = {GEMINI_FLASH_2: 0.15}
 

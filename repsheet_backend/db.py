@@ -1,3 +1,4 @@
+from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 import re
@@ -17,6 +18,7 @@ from repsheet_backend.common import (
     BillId,
     BillSummary,
     BillVotingRecord,
+    PartyVotes,
 )
 
 FULL_MEMBER_NAME_REGEX = re.compile(r"^([^ ]+\. )?([^\(]+)(\([^\)]+\))?$")
@@ -44,7 +46,11 @@ SELECT
     b.[Bill ID] AS bill_id,
     b.[Bill Number] AS bill_number,
     b.[Summary] AS full_summary,
-    mv.[Member Voted] AS voted
+    mv.[Member Voted] AS voted,
+    mv.[Vote ID] AS vote_id,
+    mv.[Political Affiliation] AS member_party,
+    b.[Private Bill Sponsor Member ID] = :member_id AS is_sponsor,
+    b.[Became Law] AS became_law
 FROM most_recent_vote
 JOIN {MEMBER_VOTES_TABLE} AS mv
     ON most_recent_vote.vote_id = mv.[Vote ID]
@@ -59,10 +65,12 @@ AND
 class RepsheetDB:
     db: sqlite3.Connection
     _full_member_name_cache: dict[str, str | None]
+    _voting_stats_cache: dict[str, dict[str, PartyVotes]]
 
     def __init__(self, db: sqlite3.Connection):
         self.db = db
         self._full_member_name_cache = {}
+        self._voting_stats_cache = {}
 
     @contextmanager
     @staticmethod
@@ -152,6 +160,7 @@ class RepsheetDB:
             "[Bill Number] TEXT NOT NULL, "
             "[Bill Type] TEXT NOT NULL, "
             "[Private Bill Sponsor Member ID] TEXT NULL,"
+            "[Became Law] INTEGER NOT NULL, "
             "[Long Title] TEXT NOT NULL, "
             "[Short Title] TEXT NULL, "
             "[Bill External URL] TEXT NOT NULL, "
@@ -209,6 +218,7 @@ class RepsheetDB:
                 row["Bill External URL"] = (
                     f"https://www.parl.ca/legisinfo/en/bill/{parliament}-{session}/{bill_number.lower()}"
                 )
+                row["Became Law"] = bill["ReceivedRoyalAssentDateTime"] is not None
 
                 bill_rows.append(row)
 
@@ -218,6 +228,7 @@ class RepsheetDB:
                 if_exists="append",
                 index=False,
             )
+            print(f"Inserted {len(bill_rows)} bills into {BILLS_TABLE} table from session {psession}.")
 
 
     def create_votes_table(self, votes_by_session: dict[str, pd.DataFrame]) -> None:
@@ -334,20 +345,66 @@ class RepsheetDB:
         self.db.commit()
         print(f"Inserted {len(bill_summaries)} bill summaries")
 
-    
+    def get_voting_stats(self, vote_id) -> dict[str, PartyVotes]:
+        if vote_id not in self._voting_stats_cache:
+            rows = self.db.execute(f"""
+                SELECT 
+                    [Vote ID] AS vote_id,
+                    [Political Affiliation] as party,
+                    [Member Voted] AS vote,
+                    COUNT(*) AS count
+                FROM {MEMBER_VOTES_TABLE} 
+                WHERE [Vote ID] = :vote_id
+                GROUP BY vote_id, party, vote""", {"vote_id": vote_id}).fetchall()
+            votes = {
+                (row["party"], row["vote"]): row["count"]
+                for row in rows
+            }
+            parties = set(row["party"] for row in rows)
+            assert len(parties) > 0, f"No votes found for vote ID {vote_id}"
+            assert set(row["vote"] for row in rows) <= {"Yea", "Nay", None}, f"Unexpected vote values: {set(row['vote'] for row in rows)}"
+            stats = {
+                party: PartyVotes.build(
+                    yea=votes.get((party, "Yea"), 0),
+                    nay=votes.get((party, "Nay"), 0),
+                    abstain=votes.get((party, None), 0),
+                )
+                for party in parties
+            }
+            self._voting_stats_cache[vote_id] = stats
+        return self._voting_stats_cache[vote_id]
+
     def get_member_voting_record(self, member_id: str) -> list[BillVotingRecord]:
         rows = self.db.execute(MEMBER_BILL_VOTING_QUERY, {"member_id": member_id}).fetchall()
         voting_record: list[BillVotingRecord] = []
+        member_party = set(row["member_party"] for row in rows)
+        assert len(member_party) == 1, f"Found multiple parties for member {member_id}: {member_party}"
+        member_party = member_party.pop()
         for row in rows:
             full_summary = BillSummary.model_validate_json(row["full_summary"])
             voted = row["voted"].lower() if row["voted"] else "abstain" 
+            voting_by_party = self.get_voting_stats(row["vote_id"])
+            other_party_votes = []
+            member_party_votes = None
+            for party, party_votes in voting_by_party.items():
+                if party == member_party:
+                    member_party_votes = party_votes
+                else:
+                    other_party_votes.append(party_votes)
+            assert member_party_votes is not None, (
+                f"Failed to find party votes for {member_party} in {row['vote_id']}"
+            )
             voting_record.append(
                 BillVotingRecord(
                     summary=full_summary.summary,
                     billID=row["bill_id"],
                     billNumber=row["bill_number"],
-                    voted=voted,
+                    billBecameLaw=row["became_law"],
+                    memberVote=voted,
+                    membersPartyVote=member_party_votes,
+                    otherPartyVotes=other_party_votes,
                     issues=full_summary.issues,
+                    privateBillOfMember=bool(row["is_sponsor"]),
                 )
             )
         bill_ids = [vote.billID for vote in voting_record]

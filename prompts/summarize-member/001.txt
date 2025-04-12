@@ -8,10 +8,24 @@ The input data is an array in this shape:
 
 ```ts
 interface BillVotingRecord {
-  summary: string,
+  summary: string,  
   billID: string,
   billNumber: string,
-  voted: 'yea' | 'nay' | 'abstain',
+  memberVote: 'yea' | 'nay' | 'abstain',
+  billBecameLaw: boolean,
+  privateBillOfMember: boolean,
+  membersPartyVotes: {
+    yea: number,
+    nay: number,
+    abstain: number,
+    percentageYea: string
+  },
+  otherPartyVotes: Array<{
+    yea: number,
+    nay: number,
+    abstain: number,
+    percentageYea: string  
+  }>,
   issues: {
     climateAndEnergy: string | null,
     affordabilityAndHousing: string | null,

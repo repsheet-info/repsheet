@@ -34,5 +34,8 @@ app-push:
 app-build:
 	cd repsheet_frontend && pnpm build
 
+app-dev:
+	cd repsheet_frontend && pnpm dev
+
 backend-format:
 	black --line-length=100 repsheet_backend

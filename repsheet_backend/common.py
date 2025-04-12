@@ -73,11 +73,34 @@ class BillSummary(BaseModel):
     issues: BillIssues
 
 
+class PartyVotes(BaseModel):
+    yea: int
+    nay: int
+    abstain: int
+    percentageYea: str
+
+    @staticmethod
+    def build(yea: int, nay: int, abstain: int) -> "PartyVotes":
+        total = yea + nay + abstain
+        if total == 0:
+            return PartyVotes(yea=0, nay=0, abstain=0, percentageYea="N/A")
+        return PartyVotes(
+            yea=yea,
+            nay=nay,
+            abstain=abstain,
+            percentageYea=f"{yea / total:.0%}",
+        )   
+
+
 class BillVotingRecord(BaseModel):
     summary: str
     billID: str
     billNumber: str
-    voted: Literal["yea", "nay", "abstain"]
+    memberVote: Literal["yea", "nay", "abstain"]
+    billBecameLaw: bool
+    privateBillOfMember: bool
+    membersPartyVote: PartyVotes
+    otherPartyVotes: list[PartyVotes]
     issues: BillIssues
 
 

@@ -54,6 +54,7 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     return response.text
 
 
+@retry(stop=stop_after_attempt(10), wait=wait_exponential())
 def _generate_text_anthropic(
     prompt: str, model: str, output_tokens: Optional[int] = None
 ) -> Optional[str]:
@@ -108,7 +109,13 @@ async def generate_text(
         "prompt": prompt,
     }
     cached_response = await genai_cache.get(cache_key)
-    if cached_response:
+    if cached_response is None:
+        # No way to distinguish between a cache miss and a cached None value
+        # so we have to check if the cache key exists
+        is_cached_none = await genai_cache.has(cache_key)
+        if is_cached_none:
+            return None
+    else:
         return cached_response
     async with api_semaphore:
         if model.startswith("claude"):

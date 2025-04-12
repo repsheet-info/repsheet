@@ -69,6 +69,16 @@ class GCSCache:
         self.key_prefix = key_prefix
         self.mode = mode
 
+    def _has_sync(self, key: CacheKey) -> bool:
+        if not isinstance(key, str):
+            key, _ = cache_key(key)
+        key = f"{self.key_prefix}{key}"
+        if self.mode == "json":
+            blob = self.bucket.blob(f"{key}/data.json.xz")
+        else:
+            blob = self.bucket.blob(f"{key}/data.pickle.xz")
+        return blob.exists()
+
     def _set_sync(self, key: CacheKey, value: Any):
         if not isinstance(key, str):
             key, key_json = cache_key(key)
@@ -126,6 +136,15 @@ class GCSCache:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
         return await asyncio.to_thread(self._get_sync, key)
+    
+    async def has(self, key: CacheKey) -> bool:
+        """Check if a key exists in the cache.
+
+        Args:
+            key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
+        """
+        return await asyncio.to_thread(self._has_sync, key)
+
 
     def cache_async_function(self, get_key: Optional[Callable] = None):
         """Decorator to cache the return value of an async function.

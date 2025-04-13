@@ -10,7 +10,7 @@ async def add_genai_summaries():
     await genai_cache.init()
 
     with RepsheetDB.connect() as db:
-        bills = db.get_every_bill_voted_on_by_a_current_member()
+        bills = db.get_every_bill_voted_on_by_a_current_member()[:3]  # Only take first 3 bills
         print(f"Summarizing {len(bills)} bills voted on by a current member")
         bill_summaries = await asyncio.gather(*[summarize_bill(bill) for bill in bills])
         bill_summaries_by_id = {
@@ -20,20 +20,20 @@ async def add_genai_summaries():
         }
         db.insert_bill_summaries(bill_summaries_by_id)
 
-        print(f"Summarizing PP and EM")
-        all_member_ids = [
-            PP, 
-            EM,
-        ]
-        voting_records = [
-            db.get_member_voting_record(member_id)
-            for member_id in all_member_ids
-        ]
-        member_summaries = await asyncio.gather(*[
-            generate_member_summary(voting_record)
-            for voting_record in voting_records
-        ])
-        db.insert_member_summaries(zip(all_member_ids, member_summaries))
+        # print(f"Summarizing PP and EM")
+        # all_member_ids = [
+        #     PP, 
+        #     EM,
+        # ]
+        # voting_records = [
+        #     db.get_member_voting_record(member_id)
+        #     for member_id in all_member_ids
+        # ]
+        # member_summaries = await asyncio.gather(*[
+        #     generate_member_summary(voting_record)
+        #     for voting_record in voting_records
+        # ])
+        # db.insert_member_summaries(zip(all_member_ids, member_summaries))
 
         db.optimize()
 

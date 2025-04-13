@@ -8,8 +8,14 @@ from repsheet_backend.fetch_data import fetch_latest_bill_text
 from repsheet_backend.genai import generate_text, GEMINI_FLASH_2
 
 
+with open("prompts/partials/issues/001.txt", "r") as f:
+    ISSUE_SUMMARY_PARTIAL = f.read()
+
+with open("prompts/partials/context/001.txt", "r") as f:
+    CONTEXT_PARTIAL = f.read()
+
 with open("prompts/summarize-bill/001.txt", "r") as f:
-    SUMMARIZE_BILL_PROMPT_TEMPLATE = f.read()
+    SUMMARIZE_BILL_PROMPT_TEMPLATE = f.read().replace("{{PARTIALS/ISSUES/001}}", ISSUE_SUMMARY_PARTIAL).replace("{{PARTIALS/CONTEXT/001}}", CONTEXT_PARTIAL)
 
 xref_external_regex = re.compile(r"<XRefExternal[^>]*>(.*?)<\/XRefExternal>")
 trailing_comma_regex = re.compile(r",\s*}")

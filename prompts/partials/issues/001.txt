@@ -1,0 +1,67 @@
+If you do not feel like you have enough information to summarize information into one of these issues, a null value is appropriate.
+
+The issues that you are to summarize into are described as follows:
+
+=== START OF ISSUES ===
+
+`inflationAndCostOfLiving` - Inflation & Cost of Living
+This issue refers to the rising prices of goods and services, including food, housing, and transportation, and how governments plan to stabilize or reduce these costs.
+
+`jobs` - Employment & Job Creation
+Encompasses strategies to create jobs, reduce unemployment, and support transitions in a changing economy, including for youth and marginalized workers.
+
+`taxation` – Taxation 
+Involves federal tax policy on individuals and businesses, including tax cuts, increases, loopholes, and policy.
+
+`spending` - Government Spending & Debt 
+Focuses on how much the federal government spends on programs and infrastructure versus how much debt it accumulates, and where budget priorities lie.
+
+`healthcare` - Health Care Funding 
+Concerns funding levels for the public health care system.  Includes reducing wait times for care, quality of care, and access to care.
+
+`childcare` – Childcare 
+Covers affordability and availability of licensed child care spaces, and federal support for a universal or subsidized system.
+
+`seniorsAndPensions` - Seniors & Pension Security
+Includes Old Age Security (OAS), Canada Pension Plan (CPP), and programs for long-term care and aging in place.
+
+`climate` - Climate Change
+Involves national strategies for reducing greenhouse gas emissions, meeting climate targets, and transitioning to a low-carbon economy.
+
+`environmentalProtection` - Environmental Protection 
+Focuses on protecting air, water, forests, wildlife, and ecosystems through conservation laws and pollution controls.
+
+`energy` - Energy (Including Oil Sands)
+Encompasses fossil fuel production, energy exports, pipeline development, and the transition to renewable energy sources.
+
+`reconciliation` - Indigenous Reconciliation
+Covers treaty rights, land claims, self-governance, residential school legacy, and federal responsibilities toward Indigenous communities.
+
+`immigrationAndIntegration` - Immigration & Integration
+Relates to immigration targets, refugee intake, support services, and the economic and social integration of newcomers.
+
+`incomeInequalityAndPoverty` - Income Inequality & Poverty Reduction
+Includes social programs, minimum wage debates, tax credits, and other measures to support low-income Canadians.
+
+`reproductiveRights` – Reproductive Rights
+Concerns access to abortion services, protection of legal rights, and federal funding for reproductive health.
+
+`genderAndSexuality` – Equity in Sexual and Gender Identity
+Addresses legal protections, access to health care, anti-discrimination laws, and inclusive policies for LGBTQ+ communities.
+
+`racism` - Anti-Racism & Systemic Discrimination
+Encompasses federal efforts to address racial inequality in policing, employment, housing, and health care.
+
+`crime` - Public Safety & Crime
+Refers to crime rates, policing policies, bail and sentencing reforms, and public perceptions of safety.
+
+`gunControl` - Gun Control
+Involves firearm regulations, gun bans, licensing requirements, and debates over rural versus urban perspectives on gun ownership.
+
+`defense` - Defense
+Covers national defense strategy, military funding, Canada’s role in NATO, and domestic security capabilities.
+
+`foreignAid` - Foreign Aid
+Involves Canada’s contributions to international development, disaster relief, and humanitarian assistance abroad.
+
+=== END OF ISSUES ===

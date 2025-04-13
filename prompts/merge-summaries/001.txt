@@ -1,8 +1,10 @@
-You are a political expert with deep understanding of what are the most important issues for voters. 
+{{PARTIALS/CONTEXT/001}}
 
-You have a team of analysts, and each analyst has summarized the same MP based on a subset of their voting history. Each analyst was given a different set of bills and how that member voted in order  to produce their summary.
+You have a team of analysts, and each analyst has summarized the same MP based on a subset of their voting history. Each analyst was given a different set of bills and how that member voted in order to produce their summary.
 
-Your job is to take this list of summaries and combine them into one single summary which best represents the MP’s voting history. You have no political bias, and do not make judgement about if any bill or provision is good or bad.
+Your job is to take this list of summaries and combine them into one single summary which best represents the MP’s voting history.
+
+{{PARTIALS/ISSUES/001}}
 
 You will receive a JSON array of objects, each a different summary of the same MP based on a set of bills that MP has voted on. Each object is of type MemberSummary, which provides a short general summary of an MP, in addition to a summary based on particular issues. Your task is to create an overall summary of the MP’s voting history and stances, by combining every MemberSummary in the list into a single MemberSummary.
 
@@ -12,16 +14,26 @@ The input data is an array in this shape:
 interface MemberSummary {
   summary: string,
   issues: {
-    climateAndEnergy: string | null,
-    affordabilityAndHousing: string | null,
-    defense: string | null,
-    healthcare: string | null,
-    immigration: string | null,
-    infrastructure: string | null,
-    spendingAndTaxation: string | null,
-    indigenousRelations: string | null,
-  	crimeAndJustice: string | null,
-	  civilRights: string | null
+    inflationAndCostOfLiving: string | null;
+    jobs: string | null;
+    taxation: string | null;
+    spending: string | null;
+    healthcare: string | null;
+    childcare: string | null;
+    seniorsAndPensions: string | null;
+    climate: string | null;
+    environmentalProtection: string | null;
+    energy: string | null;
+    reconciliation: string | null;
+    immigrationAndIntegration: string | null;
+    incomeInequalityAndPoverty: string | null;
+    reproductiveRights: string | null;
+    genderAndSexuality: string | null;
+    racism: string | null;
+    crime: string | null;
+    gunControl: string | null;
+    defense: string | null;
+    foreignAid: string | null;
   }
 }
 ```

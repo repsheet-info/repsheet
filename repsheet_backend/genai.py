@@ -6,7 +6,7 @@ from repsheet_backend.common import GCP_BILLING_PROJECT, CACHE_BUCKET
 from google import genai
 from google.genai.errors import ClientError
 from google.genai._api_client import _load_auth
-from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
+from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt, retry_if_exception
 from anthropic import Anthropic, RateLimitError
 
 GEMINI_FLASH_2 = "gemini-2.0-flash"
@@ -46,7 +46,11 @@ genai_cache = GCSCache(
     mode="json",
 )
 
-
+@retry(
+    stop=stop_after_attempt(10),
+    wait=wait_exponential(min=5, max=5 * 60),
+    retry=retry_if_exception(lambda e: isinstance(e, ClientError) and e.code == 429),
+)
 def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     """Generate text using Google Gemini."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
@@ -58,10 +62,8 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
             and e.message is not None
             and "exceeds the maximum number of tokens allowed" in e.message
         ):
+            print(f"Prompt too long for {model} ({len(prompt)} chars)")
             return None
-        if e.code == 429:
-            print("Rate limit exceeded, retrying...")
-        print("Error generating text:", e)
         raise e
     print(f"Received response from {model} ({len(response.text or "")} chars)")
     return response.text

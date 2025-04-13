@@ -116,7 +116,7 @@ class GCSCache:
             return data
         except NotFound:
             return None
-        
+
     async def init(self):
         """Checks if we can connect to the bucket. Doesn't actually "initialize" anything per se."""
         await asyncio.to_thread(self.bucket.reload)
@@ -140,7 +140,7 @@ class GCSCache:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
         return await asyncio.to_thread(self._get_sync, key)
-    
+
     async def has(self, key: CacheKey) -> bool:
         """Check if a key exists in the cache.
 
@@ -148,7 +148,6 @@ class GCSCache:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
         return await asyncio.to_thread(self._has_sync, key)
-
 
     def cache_async_function(self, get_key: Optional[Callable] = None):
         """Decorator to cache the return value of an async function.

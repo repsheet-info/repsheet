@@ -5,6 +5,7 @@ from repsheet_backend.cache import GCSCache
 from repsheet_backend.common import GCP_BILLING_PROJECT, CACHE_BUCKET
 from google import genai
 from google.genai.errors import ClientError
+from google.genai._api_client import _load_auth
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from anthropic import Anthropic, RateLimitError
 
@@ -24,7 +25,12 @@ MAX_OUTPUT_TOKENS = {
 
 MAX_CONCURRENT_REQUESTS = 16
 
-google_ai = genai.Client(vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1")
+# I think there's a weird thread-safety bug or something but it was unable to get the access token
+# unless I generated the credentials separately like this
+credentials, _ = _load_auth(project=GCP_BILLING_PROJECT)
+google_ai = genai.Client(
+    vertexai=True, project=GCP_BILLING_PROJECT, location="us-central1", credentials=credentials
+)
 
 anthropic = Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY", "none"),
@@ -62,9 +68,10 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
 
 
 @retry(
-        stop=stop_after_attempt(10), 
-        wait=wait_exponential(min=5, max=5*60), 
-        retry=retry_if_exception_type(RateLimitError))
+    stop=stop_after_attempt(10),
+    wait=wait_exponential(min=5, max=5 * 60),
+    retry=retry_if_exception_type(RateLimitError),
+)
 def _generate_text_anthropic(
     prompt: str, model: str, output_tokens: Optional[int] = None
 ) -> Optional[str]:
@@ -80,39 +87,12 @@ def _generate_text_anthropic(
     return result
 
 
-def _estimate_cost_usd_input_only(prompt: str, model: str) -> float:
-    """Estimate the cost of generating text using Google Gemini.
-    Only counts input tokens, not output tokens."""
-    # Example cost estimation logic
-    response = google_ai.models.count_tokens(model=model, contents=prompt)
-    tokens = response.total_tokens
-    if tokens is None:
-        raise ValueError("Failed to count tokens")
-    if tokens > CONTEXT_WINDOW[model]:
-        raise ValueError(f"Prompt exceeds context window of {CONTEXT_WINDOW[model]} tokens")
-    cost = tokens * (COST_PER_MTOK[model] / 1e6)
-    return cost
-
-
-async def estimate_cost_usd_input_only(prompt: str, model: str = GEMINI_FLASH_2) -> float:
-    """Estimate the cost of generating text using Google Gemini."""
-    cache_key = {
-        "method": "estimate_cost_usd_input_only",
-        "model": model,
-        "prompt": prompt,
-    }
-    cached_response = await genai_cache.get(cache_key)
-    if cached_response:
-        return cached_response
-    async with api_semaphore:
-        cost = await asyncio.to_thread(_estimate_cost_usd_input_only, prompt, model)
-    await genai_cache.set(cache_key, cost)
-    return cost
-
-
 async def generate_text(
     prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None
 ) -> Optional[str]:
+    if "{{" in prompt or "}}" in prompt:
+        raise ValueError("Prompt contains unresolved template variables")    
+
     cache_key = {
         "method": "generate_text",
         "model": model,
@@ -136,4 +116,3 @@ async def generate_text(
             response = await asyncio.to_thread(_generate_text_google, prompt, model)
     await genai_cache.set(cache_key, response)
     return response
- 

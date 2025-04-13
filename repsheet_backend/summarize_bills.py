@@ -1,21 +1,12 @@
-
 import re
 from typing import Optional
 from pydantic import BaseModel
 
-from repsheet_backend.common import BillId, BillSummary
+from repsheet_backend.common import BillId, BillSummary, load_prompt_template
 from repsheet_backend.fetch_data import fetch_latest_bill_text
 from repsheet_backend.genai import generate_text, GEMINI_FLASH_2
 
-
-with open("prompts/partials/issues/001.txt", "r") as f:
-    ISSUE_SUMMARY_PARTIAL = f.read()
-
-with open("prompts/partials/context/001.txt", "r") as f:
-    CONTEXT_PARTIAL = f.read()
-
-with open("prompts/summarize-bill/001.txt", "r") as f:
-    SUMMARIZE_BILL_PROMPT_TEMPLATE = f.read().replace("{{PARTIALS/ISSUES/001}}", ISSUE_SUMMARY_PARTIAL).replace("{{PARTIALS/CONTEXT/001}}", CONTEXT_PARTIAL)
+SUMMARIZE_BILL_PROMPT_TEMPLATE = load_prompt_template("summarize-bill/001.txt")
 
 xref_external_regex = re.compile(r"<XRefExternal[^>]*>(.*?)<\/XRefExternal>")
 trailing_comma_regex = re.compile(r",\s*}")
@@ -26,6 +17,7 @@ def simplify_bill_xml(xml_text: str) -> str:
     # The ichor permeates MY FACE MY FACE
     # Remove all the XRefExternal tags
     return xref_external_regex.sub(r"\1", xml_text)
+
 
 async def get_bill_summarization_prompt(bill: BillId) -> Optional[str]:
     xml_text = await fetch_latest_bill_text(bill)

@@ -65,6 +65,7 @@ ORDER BY
     b.[Bill ID] DESC
 """
 
+
 class RepsheetDB:
     db: sqlite3.Connection
     _full_member_name_cache: dict[str, str | None]
@@ -86,7 +87,6 @@ class RepsheetDB:
         finally:
             db.commit()
             db.close()
-
 
     def find_member_id(self, full_member_name: str) -> Optional[str]:
         """Find a member ID from their full name (e.g. Mr. Justin Trudeau (Papineau)).
@@ -214,7 +214,7 @@ class RepsheetDB:
                     sponsor_member_id = None
                 row["Private Bill Sponsor Member ID"] = sponsor_member_id
                 row["Bill Type"] = bill_type
-            
+
                 bill_number = bill["BillNumberFormatted"]
                 row["Bill Number"] = bill_number
                 row["Bill ID"] = f"{parliament}-{session}-{bill_number}"
@@ -231,8 +231,9 @@ class RepsheetDB:
                 if_exists="append",
                 index=False,
             )
-            print(f"Inserted {len(bill_rows)} bills into {BILLS_TABLE} table from session {psession}.")
-
+            print(
+                f"Inserted {len(bill_rows)} bills into {BILLS_TABLE} table from session {psession}."
+            )
 
     def create_votes_table(self, votes_by_session: dict[str, pd.DataFrame]) -> None:
         self.db.execute(f"DROP TABLE IF EXISTS {VOTES_HELD_TABLE}")
@@ -252,7 +253,8 @@ class RepsheetDB:
             "[Bill ID] TEXT NULL, "
             "[Agreed To] INTEGER NOT NULL, "
             f"FOREIGN KEY ([Bill ID]) REFERENCES {BILLS_TABLE}([Bill ID]) "
-        ")")
+            ")"
+        )
         self.db.execute(
             f"CREATE UNIQUE INDEX idx_session_vote_id ON {VOTES_HELD_TABLE} ([Parliament], [Session], [Vote Number])"
         )
@@ -264,22 +266,32 @@ class RepsheetDB:
             v["Vote Result"] = v["Vote Result"].astype("string")
             v["Agreed To"] = v["Vote Result"].apply(lambda x: True if x == "Agreed To" else False)
             v["Bill Number"] = v["Bill Number"].astype("string")
-            v["Bill ID"] = v["Bill Number"].apply(lambda x: f"{parliament}-{session}-{x}" if pd.notna(x) else None).astype("string")
+            v["Bill ID"] = (
+                v["Bill Number"]
+                .apply(lambda x: f"{parliament}-{session}-{x}" if pd.notna(x) else None)
+                .astype("string")
+            )
             v["Date"] = v["Date"].apply(parse_parl_datetime)
-            v["Vote ID"] = v["Parliament"].astype("string") + "-" + v["Session"].astype("string") + "-" + v["Vote Number"].astype("string")
+            v["Vote ID"] = (
+                v["Parliament"].astype("string")
+                + "-"
+                + v["Session"].astype("string")
+                + "-"
+                + v["Vote Number"].astype("string")
+            )
 
             for c in v.columns:
                 assert v[c].dtype != "object", f"Column {c} is still an object type"
 
             v.to_sql(VOTES_HELD_TABLE, self.db, if_exists="append", index=False)
-            print(f"Inserted {len(v)} votes into {VOTES_HELD_TABLE} table from session {p_session}.")
-
+            print(
+                f"Inserted {len(v)} votes into {VOTES_HELD_TABLE} table from session {p_session}."
+            )
 
     def get_all_votes_held(self) -> list[str]:
         """Return Vote ID for all votes held"""
         rows = self.db.execute(f"SELECT [Vote ID] FROM {VOTES_HELD_TABLE}").fetchall()
         return [row[0] for row in rows]
-    
 
     def create_member_votes_table(self, member_votes_by_vote_id: dict[str, pd.DataFrame]) -> None:
         self.db.execute(f"DROP TABLE IF EXISTS {MEMBER_VOTES_TABLE}")
@@ -297,7 +309,7 @@ class RepsheetDB:
             "PRIMARY KEY ([Vote ID], [Member ID]) "
             ")"
         )
-    
+
         self.db.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_member_vote ON {MEMBER_VOTES_TABLE} ([Vote ID], [Member ID])"
         )
@@ -308,13 +320,17 @@ class RepsheetDB:
             f"CREATE INDEX IF NOT EXISTS idx_member_vote_vote_id ON {MEMBER_VOTES_TABLE} ([Vote ID])"
         )
 
-        print(f"Inserting {sum(len(v) for v in member_votes_by_vote_id.values())} member votes into {MEMBER_VOTES_TABLE} table.")
+        print(
+            f"Inserting {sum(len(v) for v in member_votes_by_vote_id.values())} member votes into {MEMBER_VOTES_TABLE} table."
+        )
         for vote_id, v in tqdm(member_votes_by_vote_id.items()):
             v["Vote ID"] = vote_id
             v["Member ID"] = v["Member of Parliament"].apply(self.find_member_id)
             parliament = vote_id.split("-")[0]
             if parliament == LATEST_PARLIAMENT and len(v[v["Member ID"].isna()]) > 0:
-                raise ValueError(f"Found members of latest Parliament we could not match to an ID: {v[v["Member ID"].isna()]}")
+                raise ValueError(
+                    f"Found members of latest Parliament we could not match to an ID: {v[v["Member ID"].isna()]}"
+                )
             v.to_sql(
                 MEMBER_VOTES_TABLE,
                 self.db,
@@ -333,24 +349,21 @@ class RepsheetDB:
         ).fetchall()
         return [BillId(*bill) for bill in bills]
 
-
     def insert_bill_summaries(self, summaries: dict[BillId, str]) -> None:
         bill_summaries = [
-            {
-                "summary": summary,
-                "bill_id": str(bill)
-            }
-            for bill, summary in summaries.items()
+            {"summary": summary, "bill_id": str(bill)} for bill, summary in summaries.items()
         ]
         self.db.executemany(
-            f"UPDATE {BILLS_TABLE} SET Summary = :summary WHERE [Bill ID] = :bill_id", 
-            bill_summaries)
+            f"UPDATE {BILLS_TABLE} SET Summary = :summary WHERE [Bill ID] = :bill_id",
+            bill_summaries,
+        )
         self.db.commit()
         print(f"Inserted {len(bill_summaries)} bill summaries")
 
     def get_voting_stats(self, vote_id) -> list[tuple[str, PartyVotes]]:
         if vote_id not in self._voting_stats_cache:
-            rows = self.db.execute(f"""
+            rows = self.db.execute(
+                f"""
                 SELECT 
                     [Vote ID] AS vote_id,
                     [Political Affiliation] as party,
@@ -359,23 +372,26 @@ class RepsheetDB:
                 FROM {MEMBER_VOTES_TABLE} 
                 WHERE [Vote ID] = :vote_id
                 GROUP BY vote_id, party, vote
-                ORDER BY vote_id, party, vote""", {"vote_id": vote_id}).fetchall()
-            votes = {
-                (row["party"], row["vote"]): row["count"]
-                for row in rows
-            }
+                ORDER BY vote_id, party, vote""",
+                {"vote_id": vote_id},
+            ).fetchall()
+            votes = {(row["party"], row["vote"]): row["count"] for row in rows}
             # sorted to preserve determinism of output order
             parties = sorted(list(set(row["party"] for row in rows)))
             assert len(parties) > 0, f"No votes found for vote ID {vote_id}"
-            assert set(row["vote"] for row in rows) <= {"Yea", "Nay", None}, f"Unexpected vote values: {set(row['vote'] for row in rows)}"
+            assert set(row["vote"] for row in rows) <= {
+                "Yea",
+                "Nay",
+                None,
+            }, f"Unexpected vote values: {set(row['vote'] for row in rows)}"
             stats = [
                 (
-                    party, 
+                    party,
                     PartyVotes.build(
                         yea=votes.get((party, "Yea"), 0),
                         nay=votes.get((party, "Nay"), 0),
                         abstain=votes.get((party, None), 0),
-                    )
+                    ),
                 )
                 for party in parties
             ]
@@ -386,11 +402,13 @@ class RepsheetDB:
         rows = self.db.execute(MEMBER_BILL_VOTING_QUERY, {"member_id": member_id}).fetchall()
         voting_record: list[BillVotingRecord] = []
         member_party = set(row["member_party"] for row in rows)
-        assert len(member_party) == 1, f"Found multiple parties for member {member_id}: {member_party}"
+        assert (
+            len(member_party) == 1
+        ), f"Found multiple parties for member {member_id}: {member_party}"
         member_party = member_party.pop()
         for row in rows:
             full_summary = BillSummary.model_validate_json(row["full_summary"])
-            voted = row["voted"].lower() if row["voted"] else "abstain" 
+            voted = row["voted"].lower() if row["voted"] else "abstain"
             voting_by_party = self.get_voting_stats(row["vote_id"])
             other_party_votes = []
             member_party_votes = None
@@ -399,9 +417,9 @@ class RepsheetDB:
                     member_party_votes = party_votes
                 else:
                     other_party_votes.append(party_votes)
-            assert member_party_votes is not None, (
-                f"Failed to find party votes for {member_party} in {row['vote_id']}"
-            )
+            assert (
+                member_party_votes is not None
+            ), f"Failed to find party votes for {member_party} in {row['vote_id']}"
             voting_record.append(
                 BillVotingRecord(
                     summary=full_summary.summary,
@@ -418,15 +436,19 @@ class RepsheetDB:
         bill_ids = [vote.billID for vote in voting_record]
         assert len(set(bill_ids)) == len(bill_ids), "Duplicate bill IDs found in voting record"
         return voting_record
-    
 
-    def insert_member_summaries(self, member_summaries: Iterable[tuple[str, MemberSummary]]) -> None:
+    def insert_member_summaries(
+        self, member_summaries: Iterable[tuple[str, MemberSummary]]
+    ) -> None:
         summaries_for_db = [
             {"member_id": member_id, "summary": summary.model_dump_json()}
             for member_id, summary in member_summaries
             if summary is not None
         ]
-        self.db.executemany(f"UPDATE {MEMBERS_TABLE} SET Summary = :summary WHERE [Member ID] = :member_id", summaries_for_db)
+        self.db.executemany(
+            f"UPDATE {MEMBERS_TABLE} SET Summary = :summary WHERE [Member ID] = :member_id",
+            summaries_for_db,
+        )
         self.db.commit()
         print(f"Inserted {len(summaries_for_db)} member summaries")
 
@@ -435,7 +457,6 @@ class RepsheetDB:
         self.db.execute("VACUUM")
         self.db.execute("ANALYZE")
         print("Optimized database.")
-
 
 
 def parse_parl_datetime(date_str: str) -> Optional[pd.Timestamp]:

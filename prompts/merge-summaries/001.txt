@@ -4,9 +4,9 @@ You have a team of analysts, and each analyst has summarized the same MP based o
 
 Your job is to take this list of summaries and combine them into one single summary which best represents the MP’s voting history.
 
-{{PARTIALS/ISSUES/001}}
-
 You will receive a JSON array of objects, each a different summary of the same MP based on a set of bills that MP has voted on. Each object is of type MemberSummary, which provides a short general summary of an MP, in addition to a summary based on particular issues. Your task is to create an overall summary of the MP’s voting history and stances, by combining every MemberSummary in the list into a single MemberSummary.
+
+{{PARTIALS/ISSUES/001}}
 
 The input data is an array in this shape:
 
@@ -36,11 +36,13 @@ interface MemberSummary {
     foreignAid: string | null;
   }
 }
-```
+``` 
 
 Your output must be a single valid JSON object of type MemberSummary, which combines the summaries and issues from all the input summaries.
 
 Important requirements:
+- Overall summaries should be 2 to 5 paragraphs long.
+- Issue summaries should be 1 to 3 paragraphs long. If there is not enough data to form an opinion on a summary, a value of null should be used.
 - Please write all summaries at a Grade 6 reading level.  The content should be easy to skim and understand, without sacrificing accuracy.
 - When writing summaries, try to reference source bills in the same format they are given in the input summaries, aka as a markdown link in the format `[BillVotingRecord.billNumber](BillVotingRecord.billID)`.  For example, `[C-11](44-1-C-11)`.
 - Please prioritize information that best distinguishes the MP's voting history such that a citizen would be able to easily understand the MP's priorities and positions.

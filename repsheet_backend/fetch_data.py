@@ -94,22 +94,19 @@ async def fetch_member_votes(vote_id: str) -> pd.DataFrame:
     filepath = path.join(DATA_DIR, MEMBER_VOTES_TABLE, f"member-votes-{vote_id}.csv")
     if not path.exists(filepath):
         async with data_api_semaphore:
-            resp = await httpx.get(f"https://www.ourcommons.ca/Members/en/votes/{parliament}/{session}/{vote_number}/csv")
+            resp = await httpx.get(
+                f"https://www.ourcommons.ca/Members/en/votes/{parliament}/{session}/{vote_number}/csv"
+            )
         resp.raise_for_status()
         with open(filepath, "wb") as f:
             f.write(resp.content)
         print(f"Downloaded {filepath}")
     return pd.read_csv(filepath, low_memory=False)
-    
+
 
 async def fetch_all_member_votes_by_vote_id(vote_ids: Iterable[str]) -> dict[str, pd.DataFrame]:
-    votes = await asyncio.gather(*[
-        fetch_member_votes(vote_id)
-        for vote_id in vote_ids
-    ])
-    return {
-        vote_id: votes for vote_id, votes in zip(vote_ids, votes)
-    }
+    votes = await asyncio.gather(*[fetch_member_votes(vote_id) for vote_id in vote_ids])
+    return {vote_id: votes for vote_id, votes in zip(vote_ids, votes)}
 
 
 @retry(stop=stop_after_attempt(10), wait=wait_exponential())

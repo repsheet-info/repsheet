@@ -428,7 +428,8 @@ class RepsheetDB:
                     billBecameLaw=row["became_law"],
                     memberVote=voted,
                     membersPartyVote=member_party_votes,
-                    otherPartyVotes=other_party_votes,
+                    # not yet using the other party votes info in the prompts
+                    # otherPartyVotes=other_party_votes,
                     issues=full_summary.issues,
                     privateBillOfMember=bool(row["is_sponsor"]),
                 )

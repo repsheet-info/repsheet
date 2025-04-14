@@ -27,13 +27,6 @@ interface BillVotingRecord {
     abstain: number,
     percentageYea: string
   },
-  /** How the other parties voted on this bill */
-  otherPartyVotes: Array<{
-    yea: number,
-    nay: number,
-    abstain: number,
-    percentageYea: string  
-  }>,
   /** A short summary of how the bill pertains to various issues.
    * A description of these issues is given below.
    */

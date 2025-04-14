@@ -126,7 +126,6 @@ class BillVotingRecord(BaseModel):
     billBecameLaw: bool
     privateBillOfMember: bool
     membersPartyVote: PartyVotes
-    otherPartyVotes: list[PartyVotes]
     issues: BillIssues
 
 

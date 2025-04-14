@@ -68,6 +68,8 @@ Based on an analysis of these how the MP voted on these entries collectively, cr
 1.	A high-level summary describing the Member of Parliament’s general stance, patterns, and key priorities inferred from these voting records.
 2.	An issues object capturing an overall stance or perspective for each key policy area.
 
+It is notable when the MP votes against their party trend, and these bills should be considered more notable.
+
 Important requirements:
 - Overall summaries should be 2 to 5 paragraphs long.
 - Issue summaries should be 1 to 3 paragraphs long. If there is not enough data to form an opinion on a summary, a value of null should be used.

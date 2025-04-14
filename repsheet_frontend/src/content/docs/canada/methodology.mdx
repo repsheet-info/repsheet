@@ -82,18 +82,6 @@ You can view the code used to perform this step <a href="https://github.com/reps
 
 We use Claude Haiku as we found it provided high quality summaries and was fast and reasonably priced, as we need to run a large number of these summaries.
 
-### Why two stages?
-
-We found experimentally that Anthropic's Claude models were able to give the most informative summaries, but they are limited to a maximum of 200000 input "tokens" (one token is roughly 4 characters).
-This means that we were not able to provide the entire voting history in one prompt. 
-We found that splitting the voting history into batches of bills worked well, and allowed us to get around the token limit.
-
-At the moment we are using 23 batches, which we calculated as the maximum number of batches that we could provide to the AI which merges the summaries.
-This final summary merging step also has a maximum token count of 200000,
-and this initial summary step has a maximum output token count of 8192 tokens, and 200000 / 8192 is 24 (rounded down), 
-then we subtract 1 to allow wrapper prompt that comes before the summary.
-So, 23 batches gives 23 * 8192 = 188416 tokens of summaries, leaving some space for the prompt that comes beforehand.
-
 
 ## 4. MP summarization stage 2
 
@@ -107,3 +95,17 @@ You can view the code used to perform this step <a href="https://github.com/reps
 
 We use Clause Sonnet as it is more sophisticated than Claude Haiku, creating higher quality summaries, 
 so it is a better choice for the step that produces the final output.
+
+
+## Why two stages?
+
+We found experimentally that Anthropic's Claude models were able to give the most informative summaries, but they are limited to a maximum of 200000 input "tokens" (one token is roughly 4 characters).
+This means that we were not able to provide the entire voting history in one prompt. 
+We found that splitting the voting history into batches of bills worked well, and allowed us to get around the token limit.
+
+At the moment we are using 23 batches, which we calculated as the maximum number of batches that we could provide to the AI which merges the summaries.
+This final summary merging step also has a maximum token count of 200000,
+and this initial summary step has a maximum output token count of 8192 tokens, and 200000 / 8192 is 24 (rounded down), 
+then we subtract 1 to allow wrapper prompt that comes before the summary.
+So, 23 batches gives 23 * 8192 = 188416 tokens of summaries, leaving some space for the prompt that comes beforehand.
+

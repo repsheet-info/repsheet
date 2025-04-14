@@ -2,14 +2,13 @@
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import db from '../../../utils/db';
 import { assertIsMember } from '../../../types/guards';
-import type { Issues, Member } from '../../../types/db';
+import type { Member } from '../../../types/db';
 import { makeMemberSlug } from '../../../utils/slug';
 import PartyBadge from '../../../components/PartyBadge.astro';
 import { memberTitle } from '../../../utils/member-title';
 import FormattedSummary from '../../../components/FormattedSummary.astro';
-import Stack from '../../../components/Stack.astro';
+import Issues from '../../../components/Issues.astro';
 import IssueSummary from '../../../components/IssueSummary.astro';
-import { issueName } from '../../../utils/issues-name';
 
 // Get the slug from the URL
 const { slug } = Astro.params;
@@ -31,15 +30,15 @@ export function getStaticPaths() {
   }));
 }
 
-const summary = member.Summary != null ? JSON.parse(member.Summary) : {};
-const issues = Object.keys(summary?.issues || []).filter((issue) => summary.issues[issue as Issues] !== null);
+const {summary, issues} = member.Summary != null ? JSON.parse(member.Summary) : {};
 
 const constituency = member.Constituency;
 const province = member['Province / Territory'];
 
+
 ---
 
-<StarlightPage frontmatter={{ title: name, description: member.Constituency }}>
+<StarlightPage frontmatter={{ title: name, description: member.Constituency}} >
   <PartyBadge party={member['Political Affiliation']} />
   <br />
   <dl>
@@ -48,13 +47,9 @@ const province = member['Province / Territory'];
     <dt>Province / Territory</dt>
     <dd>{province}</dd>
   </dl>
-  {summary.summary && <FormattedSummary summary={summary.summary} />}
-  <h2>Issues</h2>
-  <Stack>
-    {issues.length > 0 ? issues.map((issue) => (
-      <li><IssueSummary title={issueName[issue as keyof typeof issueName]} description={summary!.issues[issue as Issues] as string} /></li>
-    )) : (
-      <p>This representative was not summarized into specific issues.</p>
-    )}  
-  </Stack>
+  {summary && <FormattedSummary summary={summary} />}
+  
+  <Issues issues={issues}>
+    <p slot="no-issues">This representative was not summarized into specific issues.</p>
+  </Issues>
 </StarlightPage>

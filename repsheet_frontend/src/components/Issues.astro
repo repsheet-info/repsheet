@@ -1,0 +1,91 @@
+---
+import type { Issues } from '../types/db';
+import { issueGroups } from '../types/db';
+import IssueSummary from './IssueSummary.astro';
+import { issueName } from '../utils/issue-name';
+import { groupName } from '../utils/group-name';
+
+const { issues } = Astro.props as { issues: Record<Issues, string | null> };
+
+const issueKeys = Object.keys(issues || []).filter((issue) => issues[issue as Issues] !== null);
+
+// Group issues by their category
+const groupedIssues: Record<string, Issues[]> = {};
+Object.entries(issueGroups).forEach(([groupName, groupIssues]) => {
+  const memberIssuesInGroup = groupIssues.filter(issue => 
+    issueKeys.includes(issue)
+  );
+  if (memberIssuesInGroup.length > 0) {
+    groupedIssues[groupName] = memberIssuesInGroup;
+  }
+});
+
+const issueColors = {
+    economy: "var(--sl-color-accent)",
+    socialServices: "var(--sl-color-accent)",
+    environment: "var(--sl-color-accent)",
+    socialJustice: "var(--sl-color-accent)",
+    securityAndDefense: "var(--sl-color-accent)",
+}
+
+
+---
+
+<h2>Issues</h2>
+
+{issueKeys.length > 0 ? Object.entries(groupedIssues).map(([name, groupIssues]) => (
+    <section class={`group-${name}`}>
+        <h3>{groupName[name as keyof typeof groupName]}</h3>
+        <ul>
+            {groupIssues.map((issue) => (
+            <li><IssueSummary title={issueName[issue]} description={issues[issue] as string} /></li>
+            ))}
+        </ul>
+    </section>
+)) : <slot name="no-issues" />}
+
+<style>
+    section {
+        border-left-width: 0.25rem;
+        border-left-style: solid;
+        margin: 4rem 0;
+        padding: 1rem;
+        padding-bottom: 1px;
+    }
+
+    ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    li {
+        margin: 2rem 0;
+    }
+
+    .group-economy {
+        border-left-color: rgb(229, 164, 0);
+        background-color: rgba(229, 164, 0, 0.1);
+    }
+
+    .group-socialServices {
+        border-left-color: rgb(0, 119, 182);
+        background-color: rgba(0, 119, 182, 0.1);
+    }
+
+    .group-environment {
+        border-left-color: rgb(42, 157, 143);
+        background-color: rgba(42, 157, 143, 0.1);
+    }
+
+    .group-socialJustice {
+        border-left-color: rgb(142, 68, 173);
+        background-color: rgba(142, 68, 173, 0.1);
+    }
+
+    .group-securityAndDefense {
+        border-left-color: rgb(55, 71, 79);
+        background-color: rgba(55, 71, 79, 0.1);
+    }
+
+  </style>
+  

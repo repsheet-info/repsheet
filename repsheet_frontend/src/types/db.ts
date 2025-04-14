@@ -30,17 +30,45 @@ export interface Bill {
   Summary: string | null;
 }
 
-export type Issues =
-  | "climateAndEnergy"
-  | "affordabilityAndHousing"
-  | "defense"
-  | "healthcare"
-  | "immigration"
-  | "infrastructure"
-  | "spendingAndTaxation"
-  | "indigenousRelations"
-  | "crimeAndJustice"
-  | "civilRights";
+export const issues = [
+  "inflationAndCostOfLiving",
+  "jobs",
+  "taxation",
+  "spending",
+  "healthcare",
+  "childcare",
+  "seniorsAndPensions",
+  "climate",
+  "environmentalProtection",
+  "energy",
+  "reconciliation",
+  "immigrationAndIntegration",
+  "incomeInequalityAndPoverty",
+  "reproductiveRights",
+  "genderAndSexuality",
+  "racism",
+  "crime",
+  "gunControl",
+  "defense",
+  "foreignAid",
+] as const;
+
+export const issueGroups: Record<string, Issues[]> = {
+  economy: ["inflationAndCostOfLiving", "jobs", "taxation", "spending"],
+  socialServices: ["healthcare", "childcare", "seniorsAndPensions"],
+  environment: ["climate", "environmentalProtection", "energy"],
+  socialJustice: [
+    "reconciliation",
+    "immigrationAndIntegration",
+    "incomeInequalityAndPoverty",
+    "reproductiveRights",
+    "genderAndSexuality",
+    "racism",
+  ],
+  securityAndDefense: ["crime", "gunControl", "defense", "foreignAid"],
+} as const;
+
+export type Issues = (typeof issues)[number];
 
 export interface BillSummary {
   summary: string;

@@ -1,4 +1,11 @@
-import type { Bill, BillSummary, Member, MemberSummary } from "./db";
+import {
+  issues,
+  type Bill,
+  type BillSummary,
+  type Issues,
+  type Member,
+  type MemberSummary,
+} from "./db";
 
 export function assertIsMember(member: any): asserts member is Member {
   if (!member || typeof member !== "object") {
@@ -149,19 +156,7 @@ export function assertIsBillSummary(
     );
   }
 
-  // Check each optional issue field is a string if present
-  const issueFields = [
-    "climateAndEnergy",
-    "affordabilityAndHousing",
-    "defense",
-    "healthcare",
-    "immigration",
-    "infrastructure",
-    "spendingAndTaxation",
-    "indigenousRelations",
-  ];
-
-  for (const field of issueFields) {
+  for (const field of issues) {
     if (
       summary.issues?.[field] !== undefined &&
       typeof summary.issues[field] !== "string" &&
@@ -195,21 +190,7 @@ export function assertIsMemberSummary(
     );
   }
 
-  // Check each optional issue field is a string if present
-  const issueFields = [
-    "climateAndEnergy",
-    "affordabilityAndHousing",
-    "defense",
-    "healthcare",
-    "immigration",
-    "infrastructure",
-    "spendingAndTaxation",
-    "indigenousRelations",
-    "crimeAndJustice",
-    "civilRights",
-  ];
-
-  for (const field of issueFields) {
+  for (const field of issues) {
     if (
       summary.issues?.[field] !== undefined &&
       typeof summary.issues[field] !== "string" &&

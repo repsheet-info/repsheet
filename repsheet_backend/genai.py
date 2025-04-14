@@ -41,7 +41,7 @@ api_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 # It says "google-ai" but I use it for everything
 genai_cache = GCSCache(
     project=GCP_BILLING_PROJECT,
-    cache_bucket=CACHE_BUCKET,
+    cache_bucket=CACHE_BUCKET, 
     key_prefix="google-ai/",
     mode="json",
 )
@@ -79,6 +79,8 @@ def _generate_text_anthropic(
 ) -> Optional[str]:
     """Generate text using Anthropic."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
+    if anthropic.api_key == "none":
+        raise ValueError("Anthropic API key is not set")
     response = anthropic.messages.create(
         model=model,
         max_tokens=output_tokens or MAX_OUTPUT_TOKENS[model],

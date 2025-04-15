@@ -61,7 +61,7 @@ export default defineConfig({
       ],
       lastUpdated: true,
       pagination: false,
-      tableOfContents: false,
+      tableOfContents: true,
       components: {
         PageTitle: "./src/components/overrides/PageTitle.astro",
         PageFrame: "./src/components/overrides/PageFrame.astro",

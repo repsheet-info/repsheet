@@ -1,8 +1,15 @@
 ---
 import FeedbackButton from '../FeedbackButton.astro';
 import StarlightPageFrame from '@astrojs/starlight/components/PageFrame.astro';
----
 
+if (Astro.locals.repsheet) {
+  Astro.locals.starlightRoute.toc = {
+    ...Astro.locals.starlightRoute.toc,
+    items: Astro.locals.repsheet?.toc.items ?? Astro.locals.starlightRoute.toc?.items ?? [],
+  } as any
+}
+
+---
 <StarlightPageFrame>
   <slot name="header" slot="header" />
   <slot name="sidebar" slot="sidebar" />

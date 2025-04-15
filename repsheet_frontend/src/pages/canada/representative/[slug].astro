@@ -9,6 +9,8 @@ import { memberTitle } from '../../../utils/member-title';
 import FormattedSummary from '../../../components/FormattedSummary.astro';
 import Issues from '../../../components/Issues.astro';
 import { Aside } from '@astrojs/starlight/components';
+import { buildToc } from '../../../utils/build-toc';
+import { groupIssues } from '../../../utils/group-issues';
 
 // Get the slug from the URL
 const { slug } = Astro.params;
@@ -35,6 +37,17 @@ const {summary, issues} = member.Summary != null ? JSON.parse(member.Summary) : 
 const constituency = member.Constituency;
 const province = member['Province / Territory'];
 
+const groupedIssues = groupIssues(issues);
+
+Astro.locals.repsheet = {
+  toc: {
+    items: [
+      { depth: 1, slug: '_top', text: name, children: []},
+      { depth: 1, slug: 'issues', text: 'Issues', children: []},
+      ...buildToc(groupedIssues),
+    ]
+  }
+}
 
 ---
 
@@ -59,5 +72,6 @@ const province = member['Province / Territory'];
     <Aside type="danger">We haven't summarized this representative yet. We will soon, but are testing out a smaller section of the site first to save on costs.</Aside>
   )}
   
+  <div slot="sidebar">TOC</div>
 
 </StarlightPage>

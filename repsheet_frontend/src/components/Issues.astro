@@ -4,41 +4,23 @@ import { issueGroups } from '../types/db';
 import IssueSummary from './IssueSummary.astro';
 import { issueName } from '../utils/issue-name';
 import { groupName } from '../utils/group-name';
+import { groupIssues } from '../utils/group-issues';
 
 const { issues } = Astro.props as { issues: Record<Issues, string | null> };
 
-const issueKeys = Object.keys(issues || []).filter((issue) => issues[issue as Issues] !== null);
-
-// Group issues by their category
-const groupedIssues: Record<string, Issues[]> = {};
-Object.entries(issueGroups).forEach(([groupName, groupIssues]) => {
-  const memberIssuesInGroup = groupIssues.filter(issue => 
-    issueKeys.includes(issue)
-  );
-  if (memberIssuesInGroup.length > 0) {
-    groupedIssues[groupName] = memberIssuesInGroup;
-  }
-});
-
-const issueColors = {
-    economy: "var(--sl-color-accent)",
-    socialServices: "var(--sl-color-accent)",
-    environment: "var(--sl-color-accent)",
-    socialJustice: "var(--sl-color-accent)",
-    securityAndDefense: "var(--sl-color-accent)",
-}
-
+const groupedIssues = groupIssues(issues);
+const hasIssues = Object.keys(groupedIssues).length > 0;
 
 ---
 
-<h2>Issues</h2>
+<h2 id="issues">Issues</h2>
 
-{issueKeys.length > 0 ? Object.entries(groupedIssues).map(([name, groupIssues]) => (
+{hasIssues ? Object.entries(groupedIssues).map(([name, groupIssues]) => (
     <section class={`group-${name}`}>
-        <h3>{groupName[name as keyof typeof groupName]}</h3>
+        <h3 id={name}>{groupName[name as keyof typeof groupName]}</h3>
         <ul>
             {groupIssues.map((issue) => (
-            <li><IssueSummary title={issueName[issue]} description={issues[issue] as string} /></li>
+            <li><IssueSummary title={issueName[issue]} description={issues[issue] as string} id={issue} /></li>
             ))}
         </ul>
     </section>

@@ -3,9 +3,10 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import IssueSummary from '../../../components/IssueSummary.astro';
 import db from '../../../utils/db';
 import { assertIsBill, assertIsBillSummary } from '../../../types/guards';
-import type { Bill, BillSummary } from '../../../types/db';
-import { issueName } from '../../../utils/issue-name';
+import type { Bill, BillSummary, Issues as IIssues } from '../../../types/db';
 import Issues from '../../../components/Issues.astro';
+import { buildToc } from '../../../utils/build-toc';
+import { groupIssues } from '../../../utils/group-issues';
 
 // Get the slug from the URL
 const { billId } = Astro.params;
@@ -40,10 +41,21 @@ const session = bill["Session"]
 const link  = bill['Bill External URL']
 const billType = bill["Bill Type"]
 
+const groupedIssues = groupIssues(summary?.issues);
+
+Astro.locals.repsheet = {
+  toc: {
+    items: [
+      { depth: 1, slug: 'details', text: 'Details', children: []},
+      { depth: 1, slug: 'summary', text: 'Summary', children: []},
+      ...buildToc(groupedIssues),
+    ]
+  }
+}
 ---
 
 <StarlightPage frontmatter={{ title, subtitle }}>
-  <h2>Details</h2>
+  <h2 id="details">Details</h2>
   <dl>
     <dt>Full Title</dt>
     <dd>{longTitle}</dd>
@@ -54,7 +66,7 @@ const billType = bill["Bill Type"]
     <dt>Full Content</dt>
     <dd><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></dd>
   </dl>
-  <h2>Summary</h2>
+  <h2 id="summary">Summary</h2>
   {summary?.summary.split("\n").map((line) => <p>{line}</p>)}
 
   <Issues issues={summary?.issues}>

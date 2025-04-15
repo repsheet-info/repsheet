@@ -70,6 +70,9 @@ Important requirements:
 - Issue summaries should be 1 to 3 paragraphs long. If there is not enough data to form an opinion on a summary, a value of null should be used.
 - These summaries will be read by a political analyst, so they should be clear and concise.
 - When writing summaries, try to reference source bills.  Each summary should have a minimum of one source bill.  When you reference a source bill, reference it as a markdown link in the format `[BillVotingRecord.billNumber](BillVotingRecord.billID)`.  For example, `[C-11](44-1-C-11)`.
+- Please prioritize information that best distinguishes the MP's voting history such that a citizen would be able to easily understand the MP's priorities and positions.
+- It is notable when the MP votes against their party trend. Votes that do not match the majority of their party position represent a strong position of this MP.
+- It is notable when a bill is the private bill of this member. Private Member Bills indicate a strong position of an MP. Aim to reference any Private Member Bills.
 - Return only the MemberSummary JSON object—no additional text or formatting.
 - Do not invent details outside the provided input data.
 - Follow standard JSON formatting rules (e.g., use double quotes for keys and string values), and making sure to properly escape double quotes.

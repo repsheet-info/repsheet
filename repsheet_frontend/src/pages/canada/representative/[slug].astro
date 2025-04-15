@@ -49,9 +49,12 @@ Astro.locals.repsheet = {
   }
 }
 
+const title = `${name}'s voting history | Repsheet`
+const description = `Summarized voting history for ${name}.`
+
 ---
 
-<StarlightPage frontmatter={{ title: name, description: member.Constituency, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
+<StarlightPage frontmatter={{ title, description, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
   <PartyBadge party={member['Political Affiliation']} />
   <br />
   <dl>

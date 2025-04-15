@@ -9,7 +9,6 @@ from tqdm import tqdm
 
 from repsheet_backend.common import (
     BILLS_TABLE,
-    JT,
     MEMBER_VOTES_TABLE,
     MEMBERS_TABLE,
     PARLIMENTARY_SESSIONS,
@@ -147,7 +146,7 @@ class RepsheetDB:
         members.to_sql(MEMBERS_TABLE, self.db, if_exists="append", index=False)
         print(f"Inserted {len(members)} members into {MEMBERS_TABLE} table.")
 
-        assert self.find_member_id("Mr. Justin Trudeau (Papineau)") == JT
+        assert self.find_member_id("Mr. Justin Trudeau (Papineau)") == "Justin Trudeau (Papineau)"
         assert self.find_member_id("Mr. Harjit S. Sajjan (Vancouver South)") is not None
         assert self.find_member_id("Ms. Soraya Martinez Ferrada (Hochelaga)") is not None
         assert self.find_member_id("Senator Josée Verner (Louis-Saint-Laurent)") is None

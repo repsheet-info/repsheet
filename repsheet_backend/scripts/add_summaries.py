@@ -1,5 +1,5 @@
 import asyncio
-from repsheet_backend.common import EM, PP
+from repsheet_backend.common import LOCAL_MPS, PARTY_LEADERS
 from repsheet_backend.db import RepsheetDB
 from repsheet_backend.summarize_bills import summarize_bill
 from repsheet_backend.summarize_members import generate_member_summary
@@ -20,11 +20,12 @@ async def add_genai_summaries():
         }
         db.insert_bill_summaries(bill_summaries_by_id)
 
-        print(f"Summarizing PP and EM")
-        all_member_ids = [
-            PP,
-            EM,
-        ]
+        all_member_ids =  (
+            PARTY_LEADERS[0], 
+            # *PARTY_LEADERS,
+            # *LOCAL_MPS,
+        )
+        print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [
             db.get_member_voting_record(member_id) for member_id in all_member_ids
         ]
@@ -40,6 +41,7 @@ async def add_genai_summaries():
         )
         db.insert_member_summaries(zip(all_member_ids, member_summaries))
 
+        print("Optimizing database")
         db.optimize()
 
 

@@ -37,9 +37,16 @@ BILLS_TABLE = "bills"
 MEMBER_VOTES_TABLE = "member_votes"
 MEMBERS_TABLE = "members"
 
-JT = "Justin Trudeau (Papineau)"
-PP = "Pierre Poilievre (Carleton)"
-EM = "Elizabeth May (Saanich—Gulf Islands)"
+PARTY_LEADERS = (
+    "Pierre Poilievre (Carleton)",
+    "Jagmeet Singh (Burnaby South)",
+    "Yves-François Blanchet (Beloeil—Chambly)",
+)
+
+LOCAL_MPS = (
+    "Elizabeth May (Saanich—Gulf Islands)",
+    "Laurel Collins (Victoria)",
+)
 
 os.makedirs(DATA_DIR, exist_ok=True)
 

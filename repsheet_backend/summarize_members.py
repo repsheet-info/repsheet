@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from repsheet_backend.common import BillVotingRecord, MemberSummary, load_prompt_template
 from repsheet_backend.db import RepsheetDB
-from repsheet_backend.genai import CLAUDE_HAIKU, CLAUDE_SONNET, generate_text
+from repsheet_backend.genai import CLAUDE_HAIKU, CLAUDE_SONNET, generate_text, generate_text_batch
 
 
 SUMMARIZE_MEMBER_PROMPT_TEMPLATE = load_prompt_template("summarize-member/001.txt")
@@ -73,12 +73,9 @@ async def generate_member_summary(
         member_id: str, 
         dump_prompts_to_path: Optional[str] = None) -> MemberSummary:
     prompts = get_member_summarisation_prompts(voting_record)
-    summaries = await asyncio.gather(
-        *[
-            # use the cheaper model for the batched summaries, since we process a lot of tokens this way
-            generate_text(prompt, model=CLAUDE_HAIKU)
-            for prompt in prompts
-        ]
+    summaries = await generate_text_batch(
+        prompts,
+        model=CLAUDE_HAIKU,
     )
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(
@@ -90,7 +87,7 @@ async def generate_member_summary(
     merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
     # use the expensive model to merge them, as this is a small number of tokens,
     # and is also the final output so should be polished
-    merged_summary = await generate_text(merge_summary_prompt, model=CLAUDE_SONNET)
+    merged_summary = (await generate_text_batch([merge_summary_prompt], model=CLAUDE_SONNET))[0]
 
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(

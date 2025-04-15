@@ -139,3 +139,11 @@ class BillVotingRecord(BaseModel):
 class MemberSummary(BaseModel):
     summary: str
     issues: BillIssues
+
+
+class MemberInfo(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    party: str
+ 

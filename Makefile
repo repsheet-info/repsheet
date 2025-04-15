@@ -22,6 +22,9 @@ db-build:
 db-add-summaries:
 	python -m repsheet_backend.scripts.add_summaries
 
+photos-download:
+	python -m repsheet_backend.scripts.download_photos
+
 app-push:
 	gcloud storage rsync \
 		--recursive \
@@ -39,3 +42,6 @@ app-dev:
 
 backend-format:
 	black --line-length=100 repsheet_backend
+
+all: db-build db-add-summaries app-build app-push
+	

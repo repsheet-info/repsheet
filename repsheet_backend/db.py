@@ -17,6 +17,7 @@ from repsheet_backend.common import (
     BillId,
     BillSummary,
     BillVotingRecord,
+    MemberInfo,
     MemberSummary,
     PartyVotes,
 )
@@ -126,6 +127,9 @@ class RepsheetDB:
         members["Member ID"] = members.apply(
             lambda row: f"{row['First Name']} {row["Last Name"]} ({row["Constituency"]})", axis=1
         )
+        members["Photo URL"] = members.apply(
+            lambda row: f"https://storage.googleapis.com/repsheet-images/photos/{row["Member ID"]}.jpg", axis=1
+        )
 
         self.db.execute(f"DROP TABLE IF EXISTS {MEMBERS_TABLE}")
         self.db.execute(
@@ -140,7 +144,8 @@ class RepsheetDB:
             "[Start Date] TIMESTAMP NOT NULL, "
             "[End Date] TIMESTAMP, "
             "[Summary] TEXT NULL, "
-            "[Short Summary] TEXT NULL "
+            "[Short Summary] TEXT NULL, "
+            "[Photo URL] TEXT NOT NULL "
             ")"
         )
 
@@ -467,6 +472,17 @@ class RepsheetDB:
         )
         self.db.commit()
         print(f"Inserted {len(summaries_for_db)} short member summaries")
+
+    def get_current_members(self) -> list[MemberInfo]:
+        rows = self.db.execute(
+            f"""SELECT
+                [Member ID] AS id, 
+                [First Name] AS first_name, 
+                [Last Name] As last_name,
+                [Political Affiliation] AS party 
+                FROM {MEMBERS_TABLE}"""
+        ).fetchall()
+        return [MemberInfo.model_validate(dict(row)) for row in rows]
 
     def optimize(self):
         # totally pointless given we have no performance issues but I couldn't help myself

@@ -12,10 +12,11 @@ const linkedSummary = summary.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, 
   const thisBill = db.prepare('SELECT * FROM bills WHERE "Bill ID" = ?').get(id);
 
   if(!thisBill) {
-    throw new Error(`Bill with ID ${id} not found`);
+    // TODO - broken links
+    // throw new Error(`Bill with ID ${id} not found`);
   }
 
-  return `<a href="/canada/bills/${thisBill['Bill ID']}">${text}</a>`;
+  return `<a href="/canada/bills/${id}/">${text}</a>`;
 });
 const linkedSummaryLines = linkedSummary.split("\n");
 

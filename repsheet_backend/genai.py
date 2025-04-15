@@ -95,7 +95,7 @@ def _generate_text_anthropic(
 async def generate_text(
     prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None
 ) -> Optional[str]:
-    if "{{" in prompt or "}}" in prompt:
+    if "{{" in prompt:
         raise ValueError("Prompt contains unresolved template variables")    
 
     cache_key = {
@@ -159,7 +159,7 @@ async def generate_text_batch(
     
     prompts = list(prompts)
     for prompt in prompts:
-        if "{{" in prompt or "}}" in prompt:
+        if "{{" in prompt:
             raise ValueError("Prompt contains unresolved template variables")
     
     results: dict[int, Optional[str]] = {}

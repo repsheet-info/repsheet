@@ -1,5 +1,3 @@
-If you do not feel like you have enough information to summarize information into one of these issues, a null value is appropriate.
-
 The issues that you are to summarize into are described as follows:
 
 === START OF ISSUES ===

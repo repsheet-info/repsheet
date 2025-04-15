@@ -55,6 +55,8 @@ interface BillVotingRecord {
 }
 ```
 
+If you do not feel like you have enough information to summarize information into one of these issues, a null value is appropriate.
+
 {{PARTIALS/ISSUES/001}}
 
 Based on an analysis of these how the MP voted on these entries collectively, craft:

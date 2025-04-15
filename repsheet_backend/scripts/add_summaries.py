@@ -2,7 +2,7 @@ import asyncio
 from repsheet_backend.common import LOCAL_MPS, PARTY_LEADERS
 from repsheet_backend.db import RepsheetDB
 from repsheet_backend.summarize_bills import summarize_bill
-from repsheet_backend.summarize_members import generate_member_summary
+from repsheet_backend.summarize_members import condense_member_summary, generate_member_summary
 from repsheet_backend.genai import genai_cache
 
 
@@ -41,7 +41,14 @@ async def add_genai_summaries():
         )
         db.insert_member_summaries(zip(all_member_ids, member_summaries))
 
-        print("Optimizing database")
+        condensed_summaries = await asyncio.gather(*[
+            condense_member_summary(summary)
+            for summary in member_summaries
+        ])
+        db.insert_short_member_summaries(
+            zip(all_member_ids, condensed_summaries)
+        )
+
         db.optimize()
 
 

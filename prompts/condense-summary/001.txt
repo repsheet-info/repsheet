@@ -1,0 +1,45 @@
+{{PARTIALS/CONTEXT/001}}
+
+Your job is to take the summary of an MP's voting history, and condense it into a single short paragraph which summarises their positions across various issues.
+
+A reader should be able to quickly understand what this MP stands for, and what they stand against.
+
+The input data is an object in this shape:
+
+```ts
+interface MemberSummary {
+  summary: string,
+  issues: {
+    inflationAndCostOfLiving: string | null;
+    jobs: string | null;
+    taxation: string | null;
+    spending: string | null;
+    healthcare: string | null;
+    childcare: string | null;
+    seniorsAndPensions: string | null;
+    climate: string | null;
+    environmentalProtection: string | null;
+    energy: string | null;
+    reconciliation: string | null;
+    immigrationAndIntegration: string | null;
+    incomeInequalityAndPoverty: string | null;
+    reproductiveRights: string | null;
+    genderAndSexuality: string | null;
+    racism: string | null;
+    crime: string | null;
+    gunControl: string | null;
+    defense: string | null;
+    foreignAid: string | null;
+  }
+}
+``` 
+
+{{PARTIALS/ISSUES/001}}
+
+Your output should be a single paragraph of text, simple and concise, conveying as much information about the MP as possible.
+
+Ignore all bill references.
+
+The input data is below:
+
+{{RAW_INPUT_DATA}}

@@ -6,6 +6,8 @@ Your job is to take this list of summaries and combine them into one single summ
 
 You will receive a JSON array of objects, each a different summary of the same MP based on a set of bills that MP has voted on. Each object is of type MemberSummary, which provides a short general summary of an MP, in addition to a summary based on particular issues. Your task is to create an overall summary of the MP’s voting history and stances, by combining every MemberSummary in the list into a single MemberSummary.
 
+If you do not feel like you have enough information to summarize information into one of these issues, a null value is appropriate.
+
 {{PARTIALS/ISSUES/001}}
 
 The input data is an array in this shape:

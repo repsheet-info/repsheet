@@ -13,6 +13,7 @@ from repsheet_backend.genai import CLAUDE_HAIKU, CLAUDE_SONNET, generate_text, g
 
 SUMMARIZE_MEMBER_PROMPT_TEMPLATE = load_prompt_template("summarize-member/001.txt")
 MERGE_SUMMARIES_PROMPT_TEMPLATE = load_prompt_template("merge-summaries/001.txt")
+CONDENSE_SUMMARY_PROMPT_TEMPLATE = load_prompt_template("condense-summary/001.txt")
 
 BATCH_COUNT = int(floor(200000 / 8192)) - 1
 
@@ -102,3 +103,13 @@ async def generate_member_summary(
 
     assert merged_summary is not None
     return validate_member_summary(merged_summary)
+
+
+async def condense_member_summary(full_summary: MemberSummary) -> str:
+    """Generate a condensed version of the summary, which is more readable and less verbose."""
+    prompt = CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace(
+        "{{RAW_INPUT_DATA}}", full_summary.model_dump_json()
+    )
+    condensed_summary = await generate_text(prompt, model=CLAUDE_SONNET)
+    assert condensed_summary is not None
+    return condensed_summary

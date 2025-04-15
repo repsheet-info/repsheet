@@ -139,7 +139,8 @@ class RepsheetDB:
             "[Political Affiliation] TEXT NOT NULL, "
             "[Start Date] TIMESTAMP NOT NULL, "
             "[End Date] TIMESTAMP, "
-            "[Summary] TEXT NULL "
+            "[Summary] TEXT NULL, "
+            "[Short Summary] TEXT NULL "
             ")"
         )
 
@@ -452,11 +453,26 @@ class RepsheetDB:
         self.db.commit()
         print(f"Inserted {len(summaries_for_db)} member summaries")
 
+    def insert_short_member_summaries(
+        self, short_summaries: Iterable[tuple[str, str]]
+    ) -> None:
+        summaries_for_db = [
+            {"member_id": member_id, "summary": summary}
+            for member_id, summary in short_summaries
+            if summary is not None
+        ]
+        self.db.executemany(
+            f"UPDATE {MEMBERS_TABLE} SET [Short Summary] = :summary WHERE [Member ID] = :member_id",
+            summaries_for_db,
+        )
+        self.db.commit()
+        print(f"Inserted {len(summaries_for_db)} short member summaries")
+
     def optimize(self):
         # totally pointless given we have no performance issues but I couldn't help myself
         self.db.execute("VACUUM")
         self.db.execute("ANALYZE")
-        print("Optimized database.")
+        print("Pointlessly optimized database.")
 
 
 def parse_parl_datetime(date_str: str) -> Optional[pd.Timestamp]:

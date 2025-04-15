@@ -4,6 +4,8 @@ I will give you the text of a legislative bill in XML format.
 
 Your task is to deeply analyze the bill to understand it.  Once you understand it fully, you are to write an overall summary, as well as create issue-specific summaries.
 
+If you do not feel like you have enough information to summarize information into one of these issues, a null value is appropriate.
+
 {{PARTIALS/ISSUES/001}}
 
 Output your final response as valid JSON matching the following TypeScript interface.  Keep the property names and structure exactly as shown, make sure to properly escape any double quotes in the JSON, and do not output any XML tags into the JSON:

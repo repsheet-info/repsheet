@@ -73,10 +73,14 @@ async def generate_member_summary(
         member_id: str, 
         dump_prompts_to_path: Optional[str] = None) -> MemberSummary:
     prompts = get_member_summarisation_prompts(voting_record)
-    summaries = await generate_text_batch(
-        prompts,
-        model=CLAUDE_HAIKU,
-    )
+    # summaries = await generate_text_batch(
+    #     prompts,
+    #     model=CLAUDE_HAIKU,
+    # )
+    summaries = await asyncio.gather(*[
+        generate_text(prompt, model=CLAUDE_HAIKU) for prompt in prompts
+    ])
+
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(
             f"{dump_prompts_to_path}/{member_id}/sub-summaries.txt", 
@@ -87,7 +91,8 @@ async def generate_member_summary(
     merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
     # use the expensive model to merge them, as this is a small number of tokens,
     # and is also the final output so should be polished
-    merged_summary = (await generate_text_batch([merge_summary_prompt], model=CLAUDE_SONNET))[0]
+    # merged_summary = (await generate_text_batch([merge_summary_prompt], model=CLAUDE_SONNET))[0]
+    merged_summary = await generate_text(merge_summary_prompt, model=CLAUDE_SONNET)
 
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(

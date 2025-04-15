@@ -21,9 +21,9 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         all_member_ids =  (
-            PARTY_LEADERS[0], 
-            # *PARTY_LEADERS,
-            # *LOCAL_MPS,
+            # PARTY_LEADERS[0], 
+            *PARTY_LEADERS,
+            *LOCAL_MPS,
         )
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [

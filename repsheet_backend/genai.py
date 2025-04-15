@@ -185,6 +185,7 @@ async def generate_text_batch(
         else:
             results[i] = cached_response
 
+    # TODO key against cache key so it can be inserted after the fact?
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
     batch_requests = [
         Request(

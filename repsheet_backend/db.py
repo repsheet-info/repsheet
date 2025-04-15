@@ -171,6 +171,28 @@ class RepsheetDB:
         self._full_member_name_cache[full_member_name] = result
         return result
 
+    def create_parliaments_table(self):
+        self.db.execute(f"DROP TABLE IF EXISTS {PARLIAMENTS_TABLE}")
+        self.db.execute(
+            f"CREATE TABLE {PARLIAMENTS_TABLE} ("
+            "[Parliament] INTEGER NOT NULL PRIMARY KEY, "
+            "[Government] TEXT NOT NULL, "
+            "[Opposition] TEXT NOT NULL, "
+            "[Supply-and-confidence] TEXT "
+            ")"
+        )
+
+        for parliament, meta in PARLIAMENT_META.items():
+            self.db.execute(
+                f"INSERT INTO {PARLIAMENTS_TABLE} ([Parliament], [Government], [Opposition], [Supply-and-confidence]) VALUES (?, ?, ?, ?)",
+                (
+                    parliament,
+                    meta["government"],
+                    meta["opposition"],
+                    meta.get("supply-and-confidence", None),
+                ),
+            )
+
     def create_members_table(self, members: pd.DataFrame):
         members["Start Date"] = members["Start Date"].apply(parse_parl_datetime)
         members["End Date"] = members["End Date"].apply(parse_parl_datetime)
@@ -502,7 +524,6 @@ class RepsheetDB:
                     privateBillOfMember=bool(row["is_sponsor"]),
                     billIsBudget=row["is_budget"],
                     parliamentYeaPercentage=row["parliament_yea_percentage"],
-                    partyYeaPercentage=row["party_yea_percentage"],
                     memberInGovernment=row["is_in_government"],
                     memberInOpposition=row["is_in_opposition"],
                     memberInSupplyAndConfidence=row["is_in_supply_and_confidence"],

@@ -80,6 +80,9 @@ with open("prompts/partials/issues/001.txt", "r") as f:
 with open("prompts/partials/context/001.txt", "r") as f:
     CONTEXT_PARTIAL = f.read()
 
+with open("prompts/partials/parliament/001.txt", "r") as f:
+    PARLIAMENT_PARTIAL = f.read()
+
 
 def load_prompt_template(file_name: str) -> str:
     """Read a template file and return its contents."""
@@ -88,6 +91,7 @@ def load_prompt_template(file_name: str) -> str:
             f.read()
             .replace("{{PARTIALS/ISSUES/001}}", ISSUE_SUMMARY_PARTIAL)
             .replace("{{PARTIALS/CONTEXT/001}}", CONTEXT_PARTIAL)
+            .replace("{{PARTIALS/PARLIAMENT/001}}", PARLIAMENT_PARTIAL)
         )
 
 
@@ -161,7 +165,6 @@ class BillVotingRecord(BaseModel):
     memberInOpposition: bool
     memberInSupplyAndConfidence: bool
     parliamentYeaPercentage: float
-    partyYeaPercentage: float
 
 
 class MemberSummary(BaseModel):

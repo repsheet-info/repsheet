@@ -64,7 +64,7 @@ SELECT
     p.[Opposition] = mv.[Political Affiliation] AS is_in_opposition,
     p.[Supply-and-confidence] = mv.[Political Affiliation] AS is_in_supply_and_confidence,
     vs.[Yea Percentage] AS parliament_yea_percentage,
-    pvs.[Yea Percentage] AS party_yea_percentage,
+    pvs.[Yea Percentage] AS party_yea_percentage
 FROM most_recent_vote
 JOIN {MEMBER_VOTES_TABLE} AS mv
     ON most_recent_vote.vote_id = mv.[Vote ID]
@@ -89,13 +89,14 @@ CREATE TABLE {VOTE_SUMMARY_TABLE} AS
 SELECT
     v.[Bill ID] AS [Bill ID],
     v.[Vote ID] AS [Vote ID],
-    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) AS [Yea],
-    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) AS [Nay],
-    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) AS [Paired],
-    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
-    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
-    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage],
-FROM {VOTES_HELD_TABLE}
+    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) AS [Yea],
+    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) AS [Nay],
+    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
+FROM {VOTES_HELD_TABLE} AS v
+JOIN {MEMBER_VOTES_TABLE} AS mv
+    ON v.[Vote ID] = mv.[Vote ID]
 GROUP BY v.[Bill ID], v.[Vote ID]
 """
 
@@ -104,15 +105,17 @@ CREATE TABLE {VOTE_PARTY_SUMMARY_TABLE} AS
 SELECT
     v.[Bill ID] AS [Bill ID],
     v.[Vote ID] AS [Vote ID],
-    v.[Political Affiliation] AS [Political Affiliation],
-    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) AS [Yea],
-    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) AS [Nay],
-    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) AS [Paired],
-    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
-    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
-    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage],
-FROM {VOTES_HELD_TABLE}
-GROUP BY v.[Bill ID], v.[Vote ID], v.[Political Affiliation]
+    mv.[Political Affiliation] AS [Political Affiliation],
+    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) AS [Yea],
+    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) AS [Nay],
+    SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) AS [Paired],
+    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
+FROM {VOTES_HELD_TABLE} AS v
+JOIN {MEMBER_VOTES_TABLE} AS mv
+    ON v.[Vote ID] = mv.[Vote ID]
+GROUP BY v.[Bill ID], v.[Vote ID], mv.[Political Affiliation]
 """
 
 
@@ -522,11 +525,13 @@ class RepsheetDB:
                     # otherPartyVotes=other_party_votes,
                     issues=full_summary.issues,
                     privateBillOfMember=bool(row["is_sponsor"]),
-                    billIsBudget=row["is_budget"],
+                    billIsBudget=bool(row["is_budget"]),
                     parliamentYeaPercentage=row["parliament_yea_percentage"],
-                    memberInGovernment=row["is_in_government"],
-                    memberInOpposition=row["is_in_opposition"],
-                    memberInSupplyAndConfidence=row["is_in_supply_and_confidence"],
+                    memberInGovernment=bool(row["is_in_government"]),
+                    memberInOpposition=bool(row["is_in_opposition"]),
+                    memberInSupplyAndConfidence=bool(
+                        row["is_in_supply_and_confidence"]
+                    ),
                 )
             )
         bill_ids = [vote.billID for vote in voting_record]

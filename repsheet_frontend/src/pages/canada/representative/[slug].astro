@@ -49,23 +49,28 @@ Astro.locals.repsheet = {
   }
 }
 
-const title = `${name}'s voting history | Repsheet`
+const title = `${name}'s voting history`
 const description = `Summarized voting history for ${name}.`
-
+const shortSummary = member['Short Summary']
 ---
 
-<StarlightPage frontmatter={{ title, description, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
-  <PartyBadge party={member['Political Affiliation']} />
-  <br />
+<StarlightPage frontmatter={{ title, description: shortSummary ?? description, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
+  {shortSummary && <Aside type="tip" title="Voting history in a sentence">
+    {shortSummary}
+  </Aside>
   <dl>
     <dt>Current constituency</dt> 
     <dd>{constituency}</dd>
     <dt>Province / Territory</dt>
     <dd>{province}</dd>
+    <dt>Party</dt>
+    <dd><PartyBadge party={member['Political Affiliation']} /></dd>
   </dl>
+  }
   {summary ? (
 
    <>
+    <h2>Overall summary</h2>
     <FormattedSummary summary={summary} />
     <Issues issues={issues}>
       <p slot="no-issues">This representative has not been summarized into specific issues.</p>

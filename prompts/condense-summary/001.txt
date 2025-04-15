@@ -36,7 +36,7 @@ interface MemberSummary {
 
 {{PARTIALS/ISSUES/001}}
 
-Your output should be one short sentence, conveying as much information about the MP as possible.
+Your output should be one short sentence at a grade 6 reading level.  It should not try to capture all the information about the MP, but instead highlight the issues and voting history that appears most important to the MP.  The content should be easy to skim and understand.
 
 Ignore all bill references.
 

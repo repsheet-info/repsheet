@@ -9,6 +9,7 @@ export interface Member {
   "Start Date": string;
   "End Date": string | null;
   Summary: string | null;
+  "Short Summary": string | null;
 }
 
 export interface MemberSummary {

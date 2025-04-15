@@ -34,7 +34,4 @@ export const collections = {
     loader: docsLoader(),
     schema: extendedSchema,
   }),
-  redirects: {
-    "/": "/canada/",
-  },
 };

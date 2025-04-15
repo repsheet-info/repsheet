@@ -14,7 +14,7 @@ export default defineConfig({
       sidebar: [
         {
           label: "Home",
-          slug: "canada",
+          slug: "",
         },
         {
           label: "About",
@@ -70,9 +70,9 @@ export default defineConfig({
     }),
   ],
   redirects: {
-    "/": {
+    "/canada": {
       status: 302,
-      destination: "/canada",
+      destination: "/",
     },
   },
 });

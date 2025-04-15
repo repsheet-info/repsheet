@@ -2,6 +2,7 @@
 DATA_DIR = repsheet_backend/data
 DATA_BUCKET = gs://repsheet-data
 APP_DIST_BUCKET = gs://repsheet-app-prod-dist
+IMAGES_BUCKET = gs://repsheet-images
 DB_FILENAME = repsheet.sqlite
 
 data-upload:
@@ -24,6 +25,7 @@ db-add-summaries:
 
 photos-download:
 	python -m repsheet_backend.scripts.download_photos
+	gsutil -m setmeta -h "Cache-Control: public, max-age=604800, immutable" $(IMAGES_BUCKET)/photos/**/*
 
 app-push:
 	gcloud storage rsync \

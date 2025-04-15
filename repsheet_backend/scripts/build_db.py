@@ -21,12 +21,14 @@ async def build_repsheet_db():
         ]
     )
     with RepsheetDB.connect() as db:
+        db.create_parliaments_table()
         db.create_members_table(members)
         db.create_bills_table(bills_by_session)
         db.create_votes_table(votes_by_session)
         votes_held = db.get_all_votes_held()
         member_votes = await fetch_all_member_votes_by_vote_id(votes_held)
         db.create_member_votes_table(member_votes)
+        db.create_vote_summary_tables()
 
 
 if __name__ == "__main__":

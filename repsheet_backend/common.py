@@ -25,6 +25,26 @@ PARLIMENTARY_SESSIONS = (
     # "38-1",
 )
 
+PARLIAMENT_META = {
+    44: {
+        "government": "Liberal",
+        "opposition": "Conservative",
+        "supply-and-confidence": "NDP",
+    },
+    43: {
+        "government": "Conservative",
+        "opposition": "Liberal",
+    },
+    42: {
+        "government": "Liberal",
+        "opposition": "Conservative",
+    },
+    41: {
+        "government": "Conservative",
+        "opposition": "Liberal",
+    },
+}
+
 LATEST_PARLIAMENT = int(max(PARLIMENTARY_SESSIONS).split("-")[0])
 assert LATEST_PARLIAMENT == 44
 
@@ -35,8 +55,10 @@ CACHE_BUCKET = "repsheet-cache"
 VOTES_HELD_TABLE = "votes_held"
 BILLS_TABLE = "bills"
 MEMBER_VOTES_TABLE = "member_votes"
+VOTE_SUMMARY_TABLE = "vote_summary"
+VOTE_PARTY_SUMMARY_TABLE = "vote_party_summary"
 MEMBERS_TABLE = "members"
-
+PARLIAMENTS_TABLE = "parliaments"
 PARTY_LEADERS = (
     "Pierre Poilievre (Carleton)",
     "Jagmeet Singh (Burnaby South)",
@@ -131,9 +153,15 @@ class BillVotingRecord(BaseModel):
     billNumber: str
     memberVote: Literal["yea", "nay", "abstain"]
     billBecameLaw: bool
+    billIsBudget: bool
     privateBillOfMember: bool
     membersPartyVote: PartyVotes
     issues: BillIssues
+    memberInGovernment: bool
+    memberInOpposition: bool
+    memberInSupplyAndConfidence: bool
+    parliamentYeaPercentage: float
+    partyYeaPercentage: float
 
 
 class MemberSummary(BaseModel):
@@ -146,4 +174,3 @@ class MemberInfo(BaseModel):
     first_name: str
     last_name: str
     party: str
- 

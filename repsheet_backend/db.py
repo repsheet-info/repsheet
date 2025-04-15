@@ -11,9 +11,13 @@ from repsheet_backend.common import (
     BILLS_TABLE,
     MEMBER_VOTES_TABLE,
     MEMBERS_TABLE,
+    PARLIAMENTS_TABLE,
     PARLIMENTARY_SESSIONS,
     LATEST_PARLIAMENT,
     VOTES_HELD_TABLE,
+    VOTE_SUMMARY_TABLE,
+    VOTE_PARTY_SUMMARY_TABLE,
+    PARLIAMENT_META,
     BillId,
     BillSummary,
     BillVotingRecord,
@@ -27,9 +31,9 @@ HOUSE_CHAMBER_ID = 1
 SENATE_CHAMBER_ID = 2
 REPSHEET_DB = "repsheet.sqlite"
 
-MEMBER_BILL_VOTING_QUERY = f"""
+WITH_MOST_RECENT_VOTE_QUERY = f"""
 WITH most_recent_vote AS (
-SELECT              
+SELECT
     b.[Bill ID] AS bill_id,
     MAX(v.[Vote ID]) AS vote_id
 FROM {MEMBER_VOTES_TABLE} AS mv
@@ -39,11 +43,14 @@ JOIN {BILLS_TABLE} AS b
     ON v.[Bill ID] = b.[Bill ID]
 WHERE
     mv.[Member ID] = :member_id
-GROUP BY 
+GROUP BY
     b.[Bill ID]
 )
+"""
+MEMBER_BILL_VOTING_QUERY = f"""
+{WITH_MOST_RECENT_VOTE_QUERY}
 
-SELECT 
+SELECT
     b.[Bill ID] AS bill_id,
     b.[Bill Number] AS bill_number,
     b.[Summary] AS full_summary,
@@ -51,18 +58,61 @@ SELECT
     mv.[Vote ID] AS vote_id,
     mv.[Political Affiliation] AS member_party,
     b.[Private Bill Sponsor Member ID] = :member_id AS is_sponsor,
-    b.[Became Law] AS became_law
+    b.[Became Law] AS became_law,
+    b.[Is Budget] AS is_budget,
+    p.[Government] = mv.[Political Affiliation] AS is_in_government,
+    p.[Opposition] = mv.[Political Affiliation] AS is_in_opposition,
+    p.[Supply-and-confidence] = mv.[Political Affiliation] AS is_in_supply_and_confidence,
+    vs.[Yea Percentage] AS parliament_yea_percentage,
+    pvs.[Yea Percentage] AS party_yea_percentage,
 FROM most_recent_vote
 JOIN {MEMBER_VOTES_TABLE} AS mv
     ON most_recent_vote.vote_id = mv.[Vote ID]
 JOIN {BILLS_TABLE} AS b
     ON most_recent_vote.bill_id = b.[Bill ID]
+JOIN {PARLIAMENTS_TABLE} AS p
+    ON b.[Parliament] = p.[Parliament]
+JOIN {VOTE_SUMMARY_TABLE} AS vs
+    ON most_recent_vote.vote_id = vs.[Vote ID]
+JOIN {VOTE_PARTY_SUMMARY_TABLE} AS pvs
+    ON most_recent_vote.vote_id = pvs.[Vote ID] AND pvs.[Political Affiliation] = mv.[Political Affiliation]
 WHERE
     mv.[Member ID] = :member_id
 AND
     b.[Summary] IS NOT NULL
 ORDER BY
     b.[Bill ID] DESC
+"""
+
+CREATE_VOTE_SUMMARY_TABLE_QUERY = f"""
+CREATE TABLE {VOTE_SUMMARY_TABLE} AS
+SELECT
+    v.[Bill ID] AS [Bill ID],
+    v.[Vote ID] AS [Vote ID],
+    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) AS [Yea],
+    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) AS [Nay],
+    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) AS [Paired],
+    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage],
+FROM {VOTES_HELD_TABLE}
+GROUP BY v.[Bill ID], v.[Vote ID]
+"""
+
+CREATE_PARTY_VOTE_SUMMARY_TABLE_QUERY = f"""
+CREATE TABLE {VOTE_PARTY_SUMMARY_TABLE} AS
+SELECT
+    v.[Bill ID] AS [Bill ID],
+    v.[Vote ID] AS [Vote ID],
+    v.[Political Affiliation] AS [Political Affiliation],
+    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) AS [Yea],
+    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) AS [Nay],
+    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) AS [Paired],
+    SUM(CASE WHEN vote = "Yea" THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    SUM(CASE WHEN vote = "Nay" THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    SUM(CASE WHEN vote = "Paired" THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage],
+FROM {VOTES_HELD_TABLE}
+GROUP BY v.[Bill ID], v.[Vote ID], v.[Political Affiliation]
 """
 
 
@@ -171,6 +221,7 @@ class RepsheetDB:
             "[Became Law] INTEGER NOT NULL, "
             "[Long Title] TEXT NOT NULL, "
             "[Short Title] TEXT NULL, "
+            "[Is Budget] BOOLEAN NOT NULL, "
             "[Bill External URL] TEXT NOT NULL, "
             "[First Reading Date] TIMESTAMP NOT NULL, "
             "[Summary] TEXT NULL, "
@@ -199,12 +250,18 @@ class RepsheetDB:
                 if len(reading_dates) == 0:
                     continue
                 else:
-                    row["First Reading Date"] = datetime.fromisoformat(sorted(reading_dates)[0])
+                    row["First Reading Date"] = datetime.fromisoformat(
+                        sorted(reading_dates)[0]
+                    )
 
                 row["Long Title"] = bill["LongTitleEn"]
                 short_title = bill["ShortTitleEn"]
+
                 if not short_title:
+                    row["Is Budget"] = False
                     short_title = None
+                else:
+                    row["Is Budget"] = short_title.startswith("Appropriation Act")
                 row["Short Title"] = short_title
 
                 bill_type = bill["BillTypeEn"]
@@ -343,6 +400,12 @@ class RepsheetDB:
                 index=False,
             )
 
+    def create_vote_summary_tables(self):
+        self.db.execute(f"DROP TABLE IF EXISTS {VOTE_SUMMARY_TABLE}")
+        self.db.execute(f"DROP TABLE IF EXISTS {VOTE_PARTY_SUMMARY_TABLE}")
+        self.db.execute(CREATE_VOTE_SUMMARY_TABLE_QUERY)
+        self.db.execute(CREATE_PARTY_VOTE_SUMMARY_TABLE_QUERY)
+
     def get_every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
         bills = self.db.execute(
             "SELECT DISTINCT v.[Parliament], v.[Session], v.[Bill Number] "
@@ -437,10 +500,18 @@ class RepsheetDB:
                     # otherPartyVotes=other_party_votes,
                     issues=full_summary.issues,
                     privateBillOfMember=bool(row["is_sponsor"]),
+                    billIsBudget=row["is_budget"],
+                    parliamentYeaPercentage=row["parliament_yea_percentage"],
+                    partyYeaPercentage=row["party_yea_percentage"],
+                    memberInGovernment=row["is_in_government"],
+                    memberInOpposition=row["is_in_opposition"],
+                    memberInSupplyAndConfidence=row["is_in_supply_and_confidence"],
                 )
             )
         bill_ids = [vote.billID for vote in voting_record]
-        assert len(set(bill_ids)) == len(bill_ids), "Duplicate bill IDs found in voting record"
+        assert len(set(bill_ids)) == len(
+            bill_ids
+        ), "Duplicate bill IDs found in voting record"
         return voting_record
 
     def insert_member_summaries(

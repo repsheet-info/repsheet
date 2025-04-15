@@ -1,4 +1,6 @@
 ---
+import db from '../utils/db';
+
 interface Props {
   summary: string;
 }
@@ -6,7 +8,15 @@ interface Props {
 const { summary } = Astro.props;
 
 // Convert markdown links to HTML links
-const linkedSummary = summary.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="/canada/bills/$2">$1</a>');
+const linkedSummary = summary.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, id) => {
+  const thisBill = db.prepare('SELECT * FROM bills WHERE "Bill ID" = ?').get(id);
+
+  if(!thisBill) {
+    throw new Error(`Bill with ID ${id} not found`);
+  }
+
+  return `<a href="/canada/bills/${thisBill['Bill ID']}">${text}</a>`;
+});
 const linkedSummaryLines = linkedSummary.split("\n");
 
 ---

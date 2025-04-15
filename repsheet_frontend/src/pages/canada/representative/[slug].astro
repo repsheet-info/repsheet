@@ -8,7 +8,7 @@ import PartyBadge from '../../../components/PartyBadge.astro';
 import { memberTitle } from '../../../utils/member-title';
 import FormattedSummary from '../../../components/FormattedSummary.astro';
 import Issues from '../../../components/Issues.astro';
-import IssueSummary from '../../../components/IssueSummary.astro';
+import { Aside } from '@astrojs/starlight/components';
 
 // Get the slug from the URL
 const { slug } = Astro.params;
@@ -38,7 +38,7 @@ const province = member['Province / Territory'];
 
 ---
 
-<StarlightPage frontmatter={{ title: name, description: member.Constituency}} >
+<StarlightPage frontmatter={{ title: name, description: member.Constituency, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
   <PartyBadge party={member['Political Affiliation']} />
   <br />
   <dl>
@@ -47,9 +47,17 @@ const province = member['Province / Territory'];
     <dt>Province / Territory</dt>
     <dd>{province}</dd>
   </dl>
-  {summary && <FormattedSummary summary={summary} />}
+  {summary ? (
+
+   <>
+    <FormattedSummary summary={summary} />
+    <Issues issues={issues}>
+      <p slot="no-issues">This representative has not been summarized into specific issues.</p>
+    </Issues>
+   </> 
+  ) : (
+    <Aside type="danger">We haven't summarized this representative yet. We will soon, but are testing out a smaller section of the site first to save on costs.</Aside>
+  )}
   
-  <Issues issues={issues}>
-    <p slot="no-issues">This representative was not summarized into specific issues.</p>
-  </Issues>
+
 </StarlightPage>

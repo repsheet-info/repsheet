@@ -31,11 +31,11 @@ This site, as well as the prompts used to generate the summaries, are all open s
 
 ## Overview
 
-Generating summaries of MPs is a four-step process:
+Generating summaries of MPs is a five-step process:
 
 1. **Data collection**: We collect the voting records for each MP and bill records from the House of Commons.
 2. **Bill summarization**: We use AI to summarize the bill records (1st prompt).
-3. **MP summarization stage 1**: We split the bills into batches, and ask the AI to summarize the MP for each batch separately (2nd prompt). 
+3. **MP summarization stage 1**: We split the bills into batches, and ask the AI to summarize the MP for each batch separately (2nd prompt).
 4. **MP summarization stage 2**: Next, we take the MP summaries from each batch and ask the AI to merge them into a final combined summary of the MP (3rd prompt).
 5. **MP short summary creation**: We condense this MP summary into a single sentence summary (4th prompt).
 
@@ -68,11 +68,12 @@ We use Gemini Flash 2.0 as it can process a large amount of input text (1M token
 Model: <a href="https://www.anthropic.com/claude/haiku" target="_blank"  rel="noopener noreferrer">Claude Haiku</a>
 
 For each member, we take the summaries of the bills voted on when they were an MP, and combine them with:
-* The bill title
-* The bill number
-* The MP's vote (Yea/Nay/Abstain)
-* The voting statistics of the MP's party (yeas/nays/abstains, party name not included)
-* Whether this bill was a private member's bill sponsored by this MP
+
+- The bill title
+- The bill number
+- The MP's vote (Yea/Nay/Abstain)
+- The voting statistics of the MP's party (yeas/nays/abstains, party name not included)
+- Whether this bill was a private member's bill sponsored by this MP
 
 We then split this into batches and ask the AI to summarize the MP for each batch separately.
 
@@ -81,7 +82,6 @@ You can view the prompt used for this step <a href="https://github.com/repsheet-
 You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
 
 We use Claude Haiku as we found it provided high quality summaries and was fast and reasonably priced, as we need to run a large number of these summaries.
-
 
 ## 4. MP summarization stage 2
 
@@ -93,28 +93,26 @@ You can view the prompt used for this step <a href="https://github.com/repsheet-
 
 You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
 
-We use Clause Sonnet as it is more sophisticated than Claude Haiku, creating higher quality summaries, 
+We use Clause Sonnet as it is more sophisticated than Claude Haiku, creating higher quality summaries,
 so it is a better choice for the step that produces the final output.
-
 
 ### Why two stages?
 
 We found experimentally that Anthropic's Claude models were able to give the most informative summaries, but they are limited to a maximum of 200000 input "tokens" (one token is roughly 4 characters).
-This means that we were not able to provide the entire voting history in one prompt. 
+This means that we were not able to provide the entire voting history in one prompt.
 We found that splitting the voting history into batches of bills worked well, and allowed us to get around the token limit.
 
 At the moment we are using 23 batches, which we calculated as the maximum number of batches that we could provide to the AI which merges the summaries.
 This final summary merging step also has a maximum token count of 200000,
-and this initial summary step has a maximum output token count of 8192 tokens, and 200000 / 8192 is 24 (rounded down), 
+and this initial summary step has a maximum output token count of 8192 tokens, and 200000 / 8192 is 24 (rounded down),
 then we subtract 1 to allow wrapper prompt that comes before the summary.
-So, 23 batches gives 23 * 8192 = 188416 tokens of summaries, leaving some space for the prompt that comes beforehand.
-
+So, 23 batches gives 23 \* 8192 = 188416 tokens of summaries, leaving some space for the prompt that comes beforehand.
 
 ## 5. MP short summary creation
 
 Model: <a href="https://www.anthropic.com/claude/sonnet" target="_blank"  rel="noopener noreferrer">Claude Sonnet</a>
 
-To create a short summary of the MP for the top of the page, and the Open Graph description, we use a final prompt to condense our larger MP summary generated in the previous steps. 
+To create a short summary of the MP for the top of the page, and the Open Graph description, we use a final prompt to condense our larger MP summary generated in the previous steps.
 
 You can view the prompt used for this step <a href="https://github.com/repsheet-info/repsheet/blob/main/prompts/condense-summary/001.txt" target="_blank" rel="noopener noreferrer">here</a>.
 

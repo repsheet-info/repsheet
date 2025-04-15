@@ -7,6 +7,7 @@ import { z } from "astro/zod";
 const extendedSchema = docsSchema({
   extend: z.object({
     subtitle: z.string().optional().nullable(),
+    image: z.string().optional().nullable(),
     toc: z
       .object({
         items: z.array(

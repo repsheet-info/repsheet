@@ -11,6 +11,7 @@ import Issues from '../../../components/Issues.astro';
 import { Aside } from '@astrojs/starlight/components';
 import { buildToc } from '../../../utils/build-toc';
 import { groupIssues } from '../../../utils/group-issues';
+import { partyColors } from '../../../utils/party-colors';
 
 // Get the slug from the URL
 const { slug } = Astro.params;
@@ -52,20 +53,37 @@ Astro.locals.repsheet = {
 const title = `${name}'s voting history`
 const description = `Summarized voting history for ${name}.`
 const shortSummary = member['Short Summary']
+const photo = member['Photo URL']
+
+Astro.locals.repsheet = {
+  ...Astro.locals.repsheet,
+  ogImage: photo
+}
+
+const party = member['Political Affiliation']
+
 ---
 
-<StarlightPage frontmatter={{ title, description: shortSummary ?? description, banner: summary ? undefined : { content:"This MP is not included in the beta"}}} >
+<StarlightPage frontmatter={{ 
+  title, 
+  description: shortSummary ?? description, 
+  banner: summary ? undefined : { content:"This MP is not included in the beta"}
+  }}>
   {shortSummary && <Aside type="tip" title="Voting history in a sentence">
     {shortSummary}
   </Aside>
-  <dl>
-    <dt>Current constituency</dt> 
-    <dd>{constituency}</dd>
-    <dt>Province / Territory</dt>
-    <dd>{province}</dd>
-    <dt>Party</dt>
-    <dd><PartyBadge party={member['Political Affiliation']} /></dd>
-  </dl>
+  <div class="breakdown">
+    <img src={photo} alt={`Photo of ${name}`} style={`background-color: ${partyColors[party as keyof typeof partyColors]};`}/>
+
+    <dl style="margin-top: 0;">
+      <dt>Current constituency</dt> 
+      <dd>{constituency}</dd>
+      <dt>Province / Territory</dt>
+      <dd>{province}</dd>
+      <dt>Party</dt>
+      <dd><PartyBadge party={member['Political Affiliation']} /></dd>
+    </dl>
+  </div>
   }
   {summary ? (
 
@@ -79,7 +97,18 @@ const shortSummary = member['Short Summary']
   ) : (
     <Aside type="danger">We haven't summarized this representative yet. We will soon, but are testing out a smaller section of the site first to save on costs.</Aside>
   )}
-  
-  <div slot="sidebar">TOC</div>
 
 </StarlightPage>
+
+<style>
+  .breakdown {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+  }
+
+  .breakdown img {
+    max-height: 400px;
+    width: 150px;
+  }
+</style>

@@ -65,6 +65,7 @@ export default defineConfig({
       components: {
         PageTitle: "./src/components/overrides/PageTitle.astro",
         PageFrame: "./src/components/overrides/PageFrame.astro",
+        Head: "./src/components/overrides/Head.astro",
       },
     }),
   ],

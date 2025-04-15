@@ -10,6 +10,7 @@ export interface Member {
   "End Date": string | null;
   Summary: string | null;
   "Short Summary": string | null;
+  "Photo URL": string | null;
 }
 
 export interface MemberSummary {

@@ -1,6 +1,6 @@
 {{PARTIALS/CONTEXT/001}}
 
-Your job is to take the summary of an MP's voting history, and condense it into two sentences which summarise their positions across various issues.
+Your job is to take the summary of an MP's voting history, and condense it into one short sentence long summary.
 
 A reader should be able to quickly understand what this MP stands for, and what they stand against.
 
@@ -36,7 +36,7 @@ interface MemberSummary {
 
 {{PARTIALS/ISSUES/001}}
 
-Your output should be two sentences of text, simple and concise, conveying as much information about the MP as possible.
+Your output should be one short sentence, conveying as much information about the MP as possible.
 
 Ignore all bill references.
 

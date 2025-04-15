@@ -1,13 +1,13 @@
 import asyncio
 import os
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 from repsheet_backend.cache import GCSCache
 from repsheet_backend.common import GCP_BILLING_PROJECT, CACHE_BUCKET
 from google import genai
 from google.genai.errors import ClientError
 from google.genai._api_client import _load_auth
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt, retry_if_exception
-from anthropic import Anthropic, RateLimitError
+from anthropic import NOT_GIVEN, Anthropic, NotGiven, RateLimitError
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.messages.batch_create_params import Request
 from anthropic.types.messages import MessageBatchRequestCounts
@@ -78,7 +78,7 @@ def _generate_text_google(prompt: str, model: str) -> Optional[str]:
     retry=retry_if_exception_type(RateLimitError),
 )
 def _generate_text_anthropic(
-    prompt: str, model: str, output_tokens: Optional[int] = None
+    prompt: str, model: str, output_tokens: Optional[int] = None, temperature: Optional[float] = None
 ) -> Optional[str]:
     """Generate text using Anthropic."""
     print(f"Generating text with {model} ({len(prompt)} chars)")
@@ -86,6 +86,7 @@ def _generate_text_anthropic(
         model=model,
         max_tokens=output_tokens or MAX_OUTPUT_TOKENS[model],
         messages=[{"role": "user", "content": prompt}],
+        temperature=temperature if temperature is not None else NOT_GIVEN,
     )
     result = response.content[0].text  # type: ignore
     print(f"Received response from {model} ({len(result)} chars)")
@@ -93,16 +94,18 @@ def _generate_text_anthropic(
 
 
 async def generate_text(
-    prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None
+    prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None, temperature: Optional[float] = None
 ) -> Optional[str]:
     if "{{" in prompt:
         raise ValueError("Prompt contains unresolved template variables")    
 
-    cache_key = {
+    cache_key: dict[str, Any] = {
         "method": "generate_text",
         "model": model,
         "prompt": prompt,
     }
+    if temperature is not None:
+        cache_key["temperature"] = temperature
     cached_response = await genai_cache.get(cache_key)
     if cached_response is None:
         # No way to distinguish between a cache miss and a cached None value
@@ -115,7 +118,7 @@ async def generate_text(
     async with api_semaphore:
         if model.startswith("claude"):
             response = await asyncio.to_thread(
-                _generate_text_anthropic, prompt, model, output_tokens
+                _generate_text_anthropic, prompt, model, output_tokens, temperature
             )
         else:
             response = await asyncio.to_thread(_generate_text_google, prompt, model)

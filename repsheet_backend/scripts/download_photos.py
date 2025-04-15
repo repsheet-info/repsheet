@@ -15,7 +15,7 @@ image_bucket = gcs.bucket(IMAGES_BUCKET)
 PARTY_SHORT = {
     "Bloc Québécois": "BQ",
     "Conservative": "CPC",
-    "Green": "GPC",
+    "Green Party": "GP",
     "NDP": "NDP",
     "Liberal": "Lib",
 }

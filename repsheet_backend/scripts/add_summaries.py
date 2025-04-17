@@ -27,6 +27,7 @@ async def add_genai_summaries():
             *LOCAL_MPS,
             # adding random people for beta testing
             "Len Webber (Calgary Confederation)",
+            "Kevin Vuong (Spadina—Fort York)",
         )
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [

@@ -12,6 +12,7 @@ import { Aside } from '@astrojs/starlight/components';
 import { buildToc } from '../../../utils/build-toc';
 import { groupIssues } from '../../../utils/group-issues';
 import { partyColors } from '../../../utils/party-colors';
+import RepresentativeStats from '../../../components/RepresentativeStats.astro';
 
 // Get the slug from the URL
 const { slug } = Astro.params;
@@ -63,9 +64,6 @@ Astro.locals.repsheet = {
 const party = member['Political Affiliation']
 
 
-const mpBills = db.prepare('SELECT * FROM bills WHERE "Private Bill Sponsor Member ID" = ?').all(member['Member ID']);
-const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').all(member['Member ID']);
-
 ---
 
 <StarlightPage frontmatter={{ 
@@ -73,9 +71,11 @@ const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').a
   description: shortSummary ?? description, 
   banner: summary ? undefined : { content:"This MP is not included in the beta"}
   }}>
+  <div class="stack">
   {shortSummary && <Aside type="tip" title="Voting history in a sentence">
     {shortSummary}
-  </Aside>
+  </Aside>}
+  
   <div class="breakdown">
     <img src={photo} alt={`Photo of ${name}`} style={`background-color: ${partyColors[party as keyof typeof partyColors]};`}/>
 
@@ -86,29 +86,28 @@ const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').a
       <dd>{province}</dd>
       <dt>Party</dt>
       <dd><PartyBadge party={member['Political Affiliation']} /></dd>
-      <dt>Votes cast</dt>
-      <dd>{mpVotes.length}</dd>
-      <dt>Bills sponsored</dt>
-      <dd>{mpBills.length}</dd>
     </dl>
   </div>
-  }
-  {summary ? (
 
-   <>
+  <RepresentativeStats member={member} />
+  {summary ? (
+   <div>
     <h2>Overall summary</h2>
     <FormattedSummary summary={summary} />
     <Issues issues={issues}>
       <p slot="no-issues">This representative has not been summarized into specific issues.</p>
     </Issues>
-   </> 
+   </div> 
   ) : (
     <Aside type="danger">We haven't summarized this representative yet. We will soon, but are testing out a smaller section of the site first to save on costs.</Aside>
   )}
+</div>
+
 
 </StarlightPage>
 
 <style>
+
   .breakdown {
     display: flex;
     flex-direction: row;
@@ -119,5 +118,11 @@ const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').a
   .breakdown img {
     max-height: 400px;
     width: 150px;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 </style>

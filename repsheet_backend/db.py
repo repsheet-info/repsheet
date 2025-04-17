@@ -65,6 +65,82 @@ ORDER BY
     b.[Bill ID] DESC
 """
 
+INSERT_MEMBER_VOTES_ATTENDED_QUERY = f"""
+WITH member_vote_count AS (
+SELECT
+    [Member ID],
+    COUNT(*) AS vote_count
+FROM {MEMBER_VOTES_TABLE}
+WHERE [Member ID] IS NOT NULL
+GROUP BY [Member ID])
+
+UPDATE {MEMBERS_TABLE} AS m
+SET [Votes Attended] = mv.vote_count
+FROM member_vote_count AS mv
+WHERE m.[Member ID] = mv.[Member ID]
+"""
+
+INSERT_MEMBER_VOTES_ATTENDABLE_QUERY = f"""
+WITH parliament_votes AS (
+SELECT 
+    Parliament,
+    COUNT(*) AS vote_count      
+FROM {VOTES_HELD_TABLE}
+GROUP BY Parliament                
+),
+
+member_parliaments AS (
+SELECT 
+    mv.[Member ID],
+    vh.Parliament
+FROM {MEMBER_VOTES_TABLE} mv
+JOIN {VOTES_HELD_TABLE} vh ON mv.[Vote ID] = vh.[Vote ID]
+WHERE mv.[Member ID] IS NOT NULL
+GROUP BY mv.[Member ID], vh.Parliament
+),
+
+member_votes_attendable AS (
+SELECT
+    mp.[Member ID],
+    SUM(pv.vote_count) AS possible_votes
+FROM member_parliaments mp
+JOIN parliament_votes pv ON mp.Parliament = pv.Parliament
+GROUP BY mp.[Member ID]
+)
+
+UPDATE {MEMBERS_TABLE} AS m
+SET [Votes Attendable] = mv.possible_votes
+FROM member_votes_attendable AS mv
+WHERE m.[Member ID] = mv.[Member ID]
+"""
+
+INSERT_PRIVATE_BILL_STATS_QUERY = f"""
+WITH member_parliaments AS (
+SELECT 
+    mv.[Member ID],
+    COUNT(DISTINCT vh.Parliament) AS parliament_count
+FROM {MEMBER_VOTES_TABLE} mv
+JOIN {VOTES_HELD_TABLE} vh ON mv.[Vote ID] = vh.[Vote ID]
+WHERE mv.[Member ID] IS NOT NULL
+GROUP BY mv.[Member ID]
+),
+
+member_private_bills AS (
+SELECT 
+    m.[Member ID],
+    COUNT(*) AS private_bill_count
+FROM {BILLS_TABLE} b
+JOIN {MEMBERS_TABLE} m ON b.[Private Bill Sponsor Member ID] = m.[Member ID]
+GROUP BY m.[Member ID]
+)
+
+UPDATE {MEMBERS_TABLE} AS m
+SET [Parliament Count] = mp.parliament_count,
+    [Private Bill Count] = mb.private_bill_count
+FROM member_parliaments mp
+JOIN member_private_bills mb ON mp.[Member ID] = mb.[Member ID]
+WHERE m.[Member ID] = mp.[Member ID]
+"""
 
 class RepsheetDB:
     db: sqlite3.Connection
@@ -297,6 +373,25 @@ class RepsheetDB:
         """Return Vote ID for all votes held"""
         rows = self.db.execute(f"SELECT [Vote ID] FROM {VOTES_HELD_TABLE}").fetchall()
         return [row[0] for row in rows]
+    
+    def _insert_member_votes_stats(self) -> None:
+        self.db.execute(
+            f"ALTER TABLE {MEMBERS_TABLE} ADD COLUMN [Votes Attended] INTEGER NOT NULL DEFAULT 0"
+        )
+        self.db.execute(INSERT_MEMBER_VOTES_ATTENDED_QUERY)
+        self.db.execute(
+            f"ALTER TABLE {MEMBERS_TABLE} ADD COLUMN [Votes Attendable] INTEGER NOT NULL DEFAULT 0"
+        )
+        self.db.execute(INSERT_MEMBER_VOTES_ATTENDABLE_QUERY)
+        self.db.execute(   
+            f"ALTER TABLE {MEMBERS_TABLE} ADD COLUMN [Private Bill Count] INTEGER NOT NULL DEFAULT 0"
+        )
+        self.db.execute(
+            f"ALTER TABLE {MEMBERS_TABLE} ADD COLUMN [Parliament Count] INTEGER NOT NULL DEFAULT 0"
+        )
+        self.db.execute(INSERT_PRIVATE_BILL_STATS_QUERY)
+        print(f"Inserted member votes stats into {MEMBERS_TABLE} table.")
+    
 
     def create_member_votes_table(self, member_votes_by_vote_id: dict[str, pd.DataFrame]) -> None:
         self.db.execute(f"DROP TABLE IF EXISTS {MEMBER_VOTES_TABLE}")
@@ -342,6 +437,7 @@ class RepsheetDB:
                 if_exists="append",
                 index=False,
             )
+        self._insert_member_votes_stats()
 
     def get_every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
         bills = self.db.execute(

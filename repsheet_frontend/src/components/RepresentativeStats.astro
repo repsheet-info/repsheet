@@ -1,0 +1,90 @@
+---
+import type { Member } from '../types/db';
+import db from '../utils/db';
+import StatBox from './StatBox.astro';
+
+interface Props {
+  member: Member;
+}
+
+const { member } = Astro.props;
+
+// Calculate average voting percentage across all MPs using SQL
+const averageResult = db.prepare(`
+  SELECT AVG(
+    CASE 
+      WHEN [Votes Attendable] > 0 
+      THEN CAST([Votes Attended] AS FLOAT) / [Votes Attendable] * 100 
+      ELSE 0 
+    END
+  ) AS average_percentage
+  FROM members
+`).get();
+const averageVotingPercentage = Math.round(averageResult.average_percentage || 0);
+
+// Calculate average private bills per parliament using SQL
+const privateBillsResult = db.prepare(`
+  SELECT AVG(
+    CASE 
+      WHEN [Parliament Count] > 0 
+      THEN CAST([Private Bill Count] AS FLOAT) / [Parliament Count] 
+      ELSE 0 
+    END
+  ) AS average_private_bills_per_parliament
+  FROM members
+`).get();
+const averagePrivateBillsPerParliament = Math.round((privateBillsResult.average_private_bills_per_parliament || 0) * 10) / 10;
+
+// Calculate this MP's voting percentage
+const votingPercentage = member['Votes Attendable'] > 0 
+  ? Math.round((member['Votes Attended'] / member['Votes Attendable']) * 100) 
+  : 0;
+
+// Calculate this MP's private bills per parliament
+const privateBillsPerParliament = member['Parliament Count'] > 0
+  ? Math.round((member['Private Bill Count'] / member['Parliament Count']) * 10) / 10
+  : 0;
+
+// Calculate differences
+const votingDiff = votingPercentage - averageVotingPercentage;
+const billsDiff = privateBillsPerParliament - averagePrivateBillsPerParliament;
+
+// Format the comparison text
+const votingComparisonText = `${Math.abs(votingDiff)}% ${votingDiff >= 0 ? 'above' : 'below'} average`;
+const billsComparisonText = `${Math.abs(billsDiff).toFixed(1)} bills per parliament ${billsDiff >= 0 ? 'above' : 'below'} average`;
+---
+
+<div class="stats-container">
+  <ul class="stats-grid">
+    <li><StatBox
+      heading="Voting attendance"
+      value={`${votingPercentage}%`}
+      comparison={votingComparisonText}
+      detail={`(${member['Votes Attended']} votes attended of ${member['Votes Attendable']})`}
+    />
+    </li>
+    <li>
+      <StatBox
+        heading="Private bills"
+        value={member['Private Bill Count']}
+        comparison={billsComparisonText}
+        detail={`(${privateBillsPerParliament} per parliament)`}
+      />
+    </li>
+  </ul>
+</div>
+
+<style>
+  ul {
+    padding: 0;
+    list-style: none;
+    margin-top: 0 !important;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+</style> 

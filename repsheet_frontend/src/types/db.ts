@@ -11,6 +11,10 @@ export interface Member {
   Summary: string | null;
   "Short Summary": string | null;
   "Photo URL": string | null;
+  "Votes Attended": number;
+  "Votes Attendable": number;
+  "Private Bill Count": number;
+  "Parliament Count": number;
 }
 
 export interface MemberSummary {

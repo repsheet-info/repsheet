@@ -1,0 +1,56 @@
+---
+interface Props {
+  heading: string;
+  value: string | number;
+  comparison: string;
+  detail: string;
+}
+
+const { heading, value, comparison, detail } = Astro.props;
+---
+
+<div class="stat-box">
+  <span class="stat-heading">{heading}</span>
+  <div class="stat-value">{value}</div>
+  <div class="stat-detail">
+    {comparison}
+    <span class="stat-subdetail">{detail}</span>
+  </div>
+</div>
+
+<style>
+  .stat-box {
+    padding: 1.5rem;
+    background: var(--sl-color-gray-7);
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 0 !important;
+  }
+
+  .stat-heading {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--sl-color-gray-2);
+    font-weight: bold;
+  }
+
+  .stat-value {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0.5rem 0;
+    color: var(--sl-color-gray-1);
+  }
+
+  .stat-detail {
+    color: var(--sl-color-gray-2);
+    font-size: 0.9rem;
+  }
+
+  .stat-subdetail {
+    display: block;
+    color: var(--sl-color-gray-3);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+</style> 

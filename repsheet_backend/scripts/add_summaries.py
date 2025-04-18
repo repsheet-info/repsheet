@@ -21,13 +21,13 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         all_member_ids =  (
-            PARTY_LEADERS[0],
+            # PARTY_LEADERS[0],
             # LOCAL_MPS[0],
-            # *PARTY_LEADERS,
-            # *LOCAL_MPS,
+            *PARTY_LEADERS,
+            *LOCAL_MPS,
             # adding random people for beta testing
-            # "Len Webber (Calgary Confederation)",
-            # "Kevin Vuong (Spadina—Fort York)",
+            "Len Webber (Calgary Confederation)",
+            "Kevin Vuong (Spadina—Fort York)",
         )
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [

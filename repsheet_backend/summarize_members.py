@@ -3,6 +3,7 @@ import json
 from math import floor
 import os
 from random import Random
+import re
 from typing import Iterable, Iterator, Literal, Optional
 from pydantic import BaseModel
 
@@ -20,6 +21,18 @@ BATCH_COUNT = int(floor(200000 / 8192)) - 1
 # fixed to make sure batches are deterministic
 # to allow for caching of AI responses
 RANDOM_SEED = 338
+
+BILL_REF_REGEX = re.compile(r"\[[A-Z]-\d+\]\((\d+-\d+-[A-Z]-\d+)\)")
+
+
+def broken_bill_links(summary: str, all_bill_ids: set[str]) -> set[str]:
+    """Check if the summary contains any broken bill links."""
+    bill_refs = BILL_REF_REGEX.findall(summary)
+    result = set()
+    for bill_ref in bill_refs:
+        if bill_ref not in all_bill_ids:
+            result.add(bill_ref)
+    return result
 
 
 def batched(iterable: list, batches: int) -> Iterator[list]:
@@ -74,6 +87,7 @@ async def generate_member_summary(
         member_id: str, 
         invalidate_cache: bool = False,
         dump_prompts_to_path: Optional[str] = None) -> MemberSummary:
+    all_bill_ids = {vote.billID for vote in voting_record}
     prompts = get_member_summarisation_prompts(voting_record)
     # summaries = await generate_text_batch(
     #     prompts,
@@ -86,6 +100,21 @@ async def generate_member_summary(
             temperature=0.0, 
             invalidate_cache=invalidate_cache) for prompt in prompts
     ])
+
+    for summary_i, summary in enumerate(summaries):
+        assert summary is not None
+        broken_links = broken_bill_links(summary, all_bill_ids)
+        if len(broken_links) > 0:
+            print(f"Found {len(broken_links)} broken bill links in {CLAUDE_HAIKU} summary ({broken_links}), regenerating with {CLAUDE_SONNET}...")
+            new_summary = await generate_text(
+                prompts[summary_i], 
+                model=CLAUDE_SONNET, 
+                temperature=0.0,
+            )
+            assert new_summary is not None
+            broken_links = broken_bill_links(new_summary, all_bill_ids)
+            if len(broken_links) > 0:
+                raise ValueError(f"Found {len(broken_links)} broken bill links summary re-run with {CLAUDE_SONNET}")
 
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(
@@ -103,6 +132,11 @@ async def generate_member_summary(
         model=CLAUDE_SONNET, 
         temperature=0.0,
         invalidate_cache=invalidate_cache)
+    assert merged_summary is not None
+    
+    broken_links = broken_bill_links(merged_summary, all_bill_ids)
+    if len(broken_links) > 0:
+        raise ValueError(f"Found {len(broken_links)} broken bill links in merged summary run with {CLAUDE_SONNET}")
 
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(

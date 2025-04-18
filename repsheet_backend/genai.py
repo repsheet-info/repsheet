@@ -26,7 +26,7 @@ MAX_OUTPUT_TOKENS = {
     CLAUDE_SONNET: 8192,
 }
 
-MAX_CONCURRENT_REQUESTS = 16
+MAX_CONCURRENT_REQUESTS = 32
 
 # I think there's a weird thread-safety bug or something but it was unable to get the access token
 # unless I generated the credentials separately like this

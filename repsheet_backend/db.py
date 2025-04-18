@@ -142,6 +142,28 @@ JOIN member_private_bills mb ON mp.[Member ID] = mb.[Member ID]
 WHERE m.[Member ID] = mp.[Member ID]
 """
 
+# I wish "animous" was a correct word to use here
+NONUNANIMOUS_BILLS_VOTED_ON_BY_ANY_CURRENT_MEMBER_QUERY = f"""
+WITH unanimous_bills AS (
+SELECT
+    DISTINCT [Bill ID]
+FROM {MEMBER_VOTES_TABLE}
+JOIN {VOTES_HELD_TABLE} ON member_votes.[Vote ID] = votes_held.[Vote ID]
+WHERE [Bill ID] IS NOT NULL
+GROUP BY [Bill ID]
+HAVING SUM(CASE WHEN [Member Voted] != 'Nay' THEN 1 ELSE 0 END) = COUNT(*)
+)
+
+SELECT v.[Parliament], v.[Session], v.[Bill Number] 
+FROM {MEMBER_VOTES_TABLE} mv 
+LEFT JOIN {VOTES_HELD_TABLE} v ON v.[Vote ID] = mv.[Vote ID] 
+WHERE [Bill Number] IS NOT NULL 
+AND [Member ID] IS NOT NULL 
+AND [Bill ID] NOT IN (SELECT [Bill ID] FROM unanimous_bills)
+GROUP BY v.[Parliament], v.[Session], v.[Bill Number] 
+ORDER BY v.[Parliament] DESC, v.[Session] DESC, v.[Bill Number] DESC 
+"""
+
 class RepsheetDB:
     db: sqlite3.Connection
     _full_member_name_cache: dict[str, str | None]
@@ -439,15 +461,8 @@ class RepsheetDB:
             )
         self._insert_member_votes_stats()
 
-    def get_every_bill_voted_on_by_a_current_member(self) -> list[BillId]:
-        bills = self.db.execute(
-            "SELECT DISTINCT v.[Parliament], v.[Session], v.[Bill Number] "
-            f"FROM {MEMBER_VOTES_TABLE} mv "
-            f"LEFT JOIN {VOTES_HELD_TABLE} v ON v.[Vote ID] = mv.[Vote ID] "
-            "WHERE [Bill Number] IS NOT NULL "
-            "AND [Member ID] IS NOT NULL "
-            "ORDER BY v.[Parliament] DESC "
-        ).fetchall()
+    def get_nonunanimous_bills_voted_on_by_a_current_member(self) -> list[BillId]:
+        bills = self.db.execute(NONUNANIMOUS_BILLS_VOTED_ON_BY_ANY_CURRENT_MEMBER_QUERY).fetchall()
         return [BillId(*bill) for bill in bills]
 
     def insert_bill_summaries(self, summaries: dict[BillId, str]) -> None:

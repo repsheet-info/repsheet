@@ -293,6 +293,7 @@ class RepsheetDB:
                     meta.get("supply-and-confidence", None),
                 ),
             )
+        print(f"Inserted {len(PARLIAMENT_META)} parliaments into {PARLIAMENTS_TABLE} table.")
 
     def create_members_table(self, members: pd.DataFrame):
         members["Start Date"] = members["Start Date"].apply(parse_parl_datetime)
@@ -548,6 +549,7 @@ class RepsheetDB:
         self.db.execute(f"DROP TABLE IF EXISTS {VOTE_PARTY_SUMMARY_TABLE}")
         self.db.execute(CREATE_VOTE_SUMMARY_TABLE_QUERY)
         self.db.execute(CREATE_PARTY_VOTE_SUMMARY_TABLE_QUERY)
+        print("Inserted voting summary tables.")
 
     def get_nonunanimous_bills_voted_on_by_a_current_member(self) -> list[BillId]:
         bills = self.db.execute(NONUNANIMOUS_BILLS_VOTED_ON_BY_ANY_CURRENT_MEMBER_QUERY).fetchall()
@@ -637,7 +639,7 @@ class RepsheetDB:
                     issues=full_summary.issues,
                     privateBillOfMember=bool(row["is_sponsor"]),
                     billIsBudget=bool(row["is_budget"]),
-                    parliamentYeaPercentage=row["parliament_yea_percentage"],
+                    parliamentYeaPercentage=f"{row["parliament_yea_percentage"]:.0%}",
                     memberInGovernment=bool(row["is_in_government"]),
                     memberInOpposition=bool(row["is_in_opposition"]),
                     memberInSupplyAndConfidence=bool(

@@ -32,8 +32,8 @@ PARLIAMENT_META = {
         "supply-and-confidence": "NDP",
     },
     43: {
-        "government": "Conservative",
-        "opposition": "Liberal",
+        "government": "Liberal",
+        "opposition": "Conservative",
     },
     42: {
         "government": "Liberal",
@@ -136,6 +136,8 @@ class PartyVotes(BaseModel):
     yea: int
     nay: int
     abstain: int
+    # percentages are represented as strings under the entirely unvalidated assumption that
+    # this will be simpler for the AI to interpret
     percentageYea: str
 
     @staticmethod
@@ -163,8 +165,10 @@ class BillVotingRecord(BaseModel):
     issues: BillIssues
     memberInGovernment: bool
     memberInOpposition: bool
-    memberInSupplyAndConfidence: bool
-    parliamentYeaPercentage: float
+    memberInSupplyAndConfidence: bool    
+    # percentages are represented as strings under the entirely unvalidated assumption that
+    # this will be simpler for the AI to interpret
+    parliamentYeaPercentage: str
 
 
 class MemberSummary(BaseModel):

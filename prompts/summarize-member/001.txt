@@ -34,7 +34,7 @@ interface BillVotingRecord {
   /** Was the member's party part of a supply and confidence deal with the government at the time */
   memberInSupplyAndConfidence: boolean
   /** What percentage of parliament voted in favor of the bill */
-  parliamentYeaPercentage: number
+  parliamentYeaPercentage: string
   /**
   /** A short summary of how the bill pertains to various issues.
    * A description of these issues is given below.

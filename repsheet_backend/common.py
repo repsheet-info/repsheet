@@ -25,6 +25,26 @@ PARLIMENTARY_SESSIONS = (
     # "38-1",
 )
 
+PARLIAMENT_META = {
+    44: {
+        "government": "Liberal",
+        "opposition": "Conservative",
+        "supply-and-confidence": "NDP",
+    },
+    43: {
+        "government": "Liberal",
+        "opposition": "Conservative",
+    },
+    42: {
+        "government": "Liberal",
+        "opposition": "Conservative",
+    },
+    41: {
+        "government": "Conservative",
+        "opposition": "Liberal",
+    },
+}
+
 LATEST_PARLIAMENT = int(max(PARLIMENTARY_SESSIONS).split("-")[0])
 assert LATEST_PARLIAMENT == 44
 
@@ -35,8 +55,10 @@ CACHE_BUCKET = "repsheet-cache"
 VOTES_HELD_TABLE = "votes_held"
 BILLS_TABLE = "bills"
 MEMBER_VOTES_TABLE = "member_votes"
+VOTE_SUMMARY_TABLE = "vote_summary"
+VOTE_PARTY_SUMMARY_TABLE = "vote_party_summary"
 MEMBERS_TABLE = "members"
-
+PARLIAMENTS_TABLE = "parliaments"
 PARTY_LEADERS = (
     "Pierre Poilievre (Carleton)",
     "Jagmeet Singh (Burnaby South)",
@@ -58,6 +80,9 @@ with open("prompts/partials/issues/001.txt", "r") as f:
 with open("prompts/partials/context/001.txt", "r") as f:
     CONTEXT_PARTIAL = f.read()
 
+with open("prompts/partials/parliament/001.txt", "r") as f:
+    PARLIAMENT_PARTIAL = f.read()
+
 
 def load_prompt_template(file_name: str) -> str:
     """Read a template file and return its contents."""
@@ -66,6 +91,7 @@ def load_prompt_template(file_name: str) -> str:
             f.read()
             .replace("{{PARTIALS/ISSUES/001}}", ISSUE_SUMMARY_PARTIAL)
             .replace("{{PARTIALS/CONTEXT/001}}", CONTEXT_PARTIAL)
+            .replace("{{PARTIALS/PARLIAMENT/001}}", PARLIAMENT_PARTIAL)
         )
 
 
@@ -110,6 +136,8 @@ class PartyVotes(BaseModel):
     yea: int
     nay: int
     abstain: int
+    # percentages are represented as strings under the entirely unvalidated assumption that
+    # this will be simpler for the AI to interpret
     percentageYea: str
 
     @staticmethod
@@ -131,9 +159,16 @@ class BillVotingRecord(BaseModel):
     billNumber: str
     memberVote: Literal["yea", "nay", "abstain"]
     billBecameLaw: bool
+    billIsBudget: bool
     privateBillOfMember: bool
     membersPartyVote: PartyVotes
     issues: BillIssues
+    memberInGovernment: bool
+    memberInOpposition: bool
+    memberInSupplyAndConfidence: bool    
+    # percentages are represented as strings under the entirely unvalidated assumption that
+    # this will be simpler for the AI to interpret
+    parliamentYeaPercentage: str
 
 
 class MemberSummary(BaseModel):
@@ -146,4 +181,3 @@ class MemberInfo(BaseModel):
     first_name: str
     last_name: str
     party: str
- 

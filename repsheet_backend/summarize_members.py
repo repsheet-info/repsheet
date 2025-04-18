@@ -72,6 +72,7 @@ def write_prompts_and_summaries(filename: str, prompts_and_summaries: Iterable[t
 async def generate_member_summary(
         voting_record: list[BillVotingRecord], 
         member_id: str, 
+        invalidate_cache: bool = False,
         dump_prompts_to_path: Optional[str] = None) -> MemberSummary:
     prompts = get_member_summarisation_prompts(voting_record)
     # summaries = await generate_text_batch(
@@ -79,7 +80,11 @@ async def generate_member_summary(
     #     model=CLAUDE_HAIKU,
     # )
     summaries = await asyncio.gather(*[
-        generate_text(prompt, model=CLAUDE_HAIKU, temperature=0.0) for prompt in prompts
+        generate_text(
+            prompt, 
+            model=CLAUDE_HAIKU, 
+            temperature=0.0, 
+            invalidate_cache=invalidate_cache) for prompt in prompts
     ])
 
     if dump_prompts_to_path is not None:
@@ -93,7 +98,11 @@ async def generate_member_summary(
     # use the expensive model to merge them, as this is a small number of tokens,
     # and is also the final output so should be polished
     # merged_summary = (await generate_text_batch([merge_summary_prompt], model=CLAUDE_SONNET))[0]
-    merged_summary = await generate_text(merge_summary_prompt, model=CLAUDE_SONNET, temperature=0.0)
+    merged_summary = await generate_text(
+        merge_summary_prompt, 
+        model=CLAUDE_SONNET, 
+        temperature=0.0,
+        invalidate_cache=invalidate_cache)
 
     if dump_prompts_to_path is not None:
         write_prompts_and_summaries(

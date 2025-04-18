@@ -26,7 +26,7 @@ MAX_OUTPUT_TOKENS = {
     CLAUDE_SONNET: 8192,
 }
 
-MAX_CONCURRENT_REQUESTS = 16
+MAX_CONCURRENT_REQUESTS = 32
 
 # I think there's a weird thread-safety bug or something but it was unable to get the access token
 # unless I generated the credentials separately like this
@@ -94,7 +94,11 @@ def _generate_text_anthropic(
 
 
 async def generate_text(
-    prompt: str, model: str = GEMINI_FLASH_2, output_tokens: Optional[int] = None, temperature: Optional[float] = None
+    prompt: str, 
+    model: str = GEMINI_FLASH_2, 
+    output_tokens: Optional[int] = None, 
+    temperature: Optional[float] = None,
+    invalidate_cache: bool = False,
 ) -> Optional[str]:
     if "{{" in prompt:
         raise ValueError("Prompt contains unresolved template variables")    
@@ -106,15 +110,16 @@ async def generate_text(
     }
     if temperature is not None:
         cache_key["temperature"] = temperature
-    cached_response = await genai_cache.get(cache_key)
-    if cached_response is None:
-        # No way to distinguish between a cache miss and a cached None value
-        # so we have to check if the cache key exists
-        is_cached_none = await genai_cache.has(cache_key)
-        if is_cached_none:
-            return None
-    else:
-        return cached_response
+    if not invalidate_cache:
+        cached_response = await genai_cache.get(cache_key)
+        if cached_response is None:
+            # No way to distinguish between a cache miss and a cached None value
+            # so we have to check if the cache key exists
+            is_cached_none = await genai_cache.has(cache_key)
+            if is_cached_none:
+                return None
+        else:
+            return cached_response
     async with api_semaphore:
         if model.startswith("claude"):
             response = await asyncio.to_thread(

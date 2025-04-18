@@ -18,34 +18,37 @@ export default defineConfig({
         },
         {
           label: "About",
-          slug: "canada/about",
+          link: "/canada/about/",
         },
         {
           label: "Methodology",
-          slug: "canada/methodology",
+          link: "/canada/methodology/",
         },
         {
           label: "Party Leaders",
           items: [
             {
-              slug: "canada/representative/maxime_bernier",
+              link: "/canada/representative/maxime_bernier/",
               label: "Maxime Bernier",
             },
             {
-              link: "/canada/representative/Yves-François_Blanchet",
+              link: "/canada/representative/Yves-François_Blanchet/",
               label: "Yves-François Blanchet",
             },
-            { slug: "canada/representative/mark_carney", label: "Mark Carney" },
             {
-              link: "/canada/representative/Elizabeth_May",
+              link: "/canada/representative/mark_carney/",
+              label: "Mark Carney",
+            },
+            {
+              link: "/canada/representative/Elizabeth_May/",
               label: "Elizabeth May",
             },
             {
-              link: "/canada/representative/Pierre_Poilievre",
+              link: "/canada/representative/Pierre_Poilievre/",
               label: "Pierre Poilievre",
             },
             {
-              link: "/canada/representative/Jagmeet_Singh",
+              link: "/canada/representative/Jagmeet_Singh/",
               label: "Jagmeet Singh",
             },
           ],

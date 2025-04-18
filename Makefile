@@ -23,6 +23,9 @@ db-build:
 db-add-summaries:
 	python -m repsheet_backend.scripts.add_summaries
 
+db-regenerate-summaries:
+	python -m repsheet_backend.scripts.regenerate_summaries
+
 photos-download:
 	python -m repsheet_backend.scripts.download_photos
 	gsutil -m setmeta -h "Cache-Control: public, max-age=604800, immutable" $(IMAGES_BUCKET)/photos/**/*

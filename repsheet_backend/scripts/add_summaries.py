@@ -10,7 +10,7 @@ async def add_genai_summaries():
     await genai_cache.init()
 
     with RepsheetDB.connect() as db:
-        bills = db.get_every_bill_voted_on_by_a_current_member()
+        bills = db.get_nonunanimous_bills_voted_on_by_a_current_member()
         print(f"Summarizing {len(bills)} bills voted on by a current member")
         bill_summaries = await asyncio.gather(*[summarize_bill(bill) for bill in bills])
         bill_summaries_by_id = {
@@ -21,12 +21,13 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         all_member_ids =  (
-            # PARTY_LEADERS[0],
+            PARTY_LEADERS[0],
             # LOCAL_MPS[0],
-            *PARTY_LEADERS,
-            *LOCAL_MPS,
+            # *PARTY_LEADERS,
+            # *LOCAL_MPS,
             # adding random people for beta testing
-            "Len Webber (Calgary Confederation)",
+            # "Len Webber (Calgary Confederation)",
+            # "Kevin Vuong (Spadina—Fort York)",
         )
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [

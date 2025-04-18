@@ -39,10 +39,12 @@ interface BillSummary {
 ```
 
 Make sure you follow these additional rules:
-1. Overall summaries should be 2 to 5 paragraphs long.
-2. Issue summaries should be 1 to 3 paragraphs long.
-3. If you do not have enough information to create an issue summary, or the bill does not pertain to that issue, return a null value.
-3. Only return valid JSON, with no additional text or characters.
+- Overall summaries should be 2 to 5 paragraphs long.
+- Issue summaries should be 1 to 3 paragraphs long.
+- Please write all summaries at a Grade 6 reading level.  The content should be easy to skim and understand, without sacrificing accuracy.
+- Do not assume the effects of a bill, summarise only what is written.
+- If you do not have enough information to create an issue summary, or the bill does not pertain to that issue, return a null value.
+- Only return valid JSON, with no additional text or characters.
 
 The bill in XML format is below:
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from repsheet_backend.common import (
     BillVotingRecord,
     MemberSummary,
+    fix_broken_newlines_in_json,
     load_prompt_template,
 )
 from repsheet_backend.db import RepsheetDB
@@ -102,10 +103,11 @@ def get_summary_merge_prompt(summaries: list[MemberSummary]) -> str:
     return MERGE_SUMMARIES_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", summaries_json)
 
 
-def validate_member_summary(response: str | None) -> MemberSummary:
-    assert response is not None
-    response = response.removeprefix("```json\n").removesuffix("\n```")
-    return MemberSummary.model_validate_json(response)
+def validate_member_summary(text: str | None) -> MemberSummary:
+    assert text is not None
+    text = text.removeprefix("```json\n").removesuffix("\n```")
+    text = fix_broken_newlines_in_json(text)
+    return MemberSummary.model_validate_json(text)
 
 
 def write_prompts_and_summaries(
@@ -238,7 +240,7 @@ async def validate_summary_regenerate_if_broken(
                     f"Found {len(broken_links)} unpatched broken bill links in summary re-run with {CLAUDE_SONNET}, wrote to {output_file}"
                 )
                 return None
-
+            
     try:
         return validate_member_summary(summary)
     except ValidationError as e:
@@ -253,7 +255,7 @@ async def validate_summary_regenerate_if_broken(
             return await validate_summary_regenerate_if_broken(
                 prompt, new_summary, all_bill_ids, member_id, model=CLAUDE_SONNET
             )
-        elif attempt + 1 >= MAX_REGENERATION_ATTEMPTS:
+        elif attempt >= MAX_REGENERATION_ATTEMPTS:
             # dump details for debug
             output_file = f"debug/validation/{member_id}-summary.json"
             with open(output_file, "w") as f:

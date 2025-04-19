@@ -94,6 +94,20 @@ def load_prompt_template(file_name: str) -> str:
             .replace("{{PARTIALS/PARLIAMENT/001}}", PARLIAMENT_PARTIAL)
         )
 
+def fix_broken_newlines_in_json(text: str):
+    """Sometimes the AI puts unescaped new lines in JSON strings, this should fix that."""
+    inside_quote = False 
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c == "\n" and inside_quote:
+            text = text[:i] + "\\n" + text[i+1:]
+            i = i + 1
+        if c == '"' and text[i - 1] != "\\":
+            inside_quote = not inside_quote
+        i = i + 1
+    return text
+
 
 class BillId(NamedTuple):
     parliament: int

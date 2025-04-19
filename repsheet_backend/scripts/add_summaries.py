@@ -28,26 +28,24 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         # all_member_ids = (
-        # PARTY_LEADERS[0],
-        # LOCAL_MPS[0],
         # *PARTY_LEADERS,
         # *LOCAL_MPS,
-        # adding random people for beta testing
-        # "Len Webber (Calgary Confederation)",
-        # "Kevin Vuong (Spadina—Fort York)",
         # )
+        
         all_member_ids = [member.id for member in db.get_current_members()]
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = (
             db.get_member_voting_record(member_id) for member_id in all_member_ids
+            # TODO URGENT temporarily exclude Hedy Fry, generated JSON is broken
+            if member_id != "Hedy Fry (Vancouver Centre)"
         )
 
         if BATCH_MODE:
             print(f"Summarizing voting records in batch mode")
             member_summaries = await asyncio.gather(
                 *[
-                    generate_member_summary_batch(voting_record)
-                    for voting_record in voting_records
+                    generate_member_summary_batch(voting_record, member_id)
+                    for voting_record, member_id in zip(voting_records, all_member_ids)
                 ]
             )
         else:

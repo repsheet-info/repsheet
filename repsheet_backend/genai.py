@@ -159,6 +159,15 @@ async def anthropic_wait_for_batch(anthropic_batch_id: str, sleep: int = 60) -> 
     return result
 
 
+def prompt_cache_key(prompt: str, model: str, temperature: Optional[float] = None) -> str:
+    return genai_cache.cache_key({
+        "method": "generate_text",
+        "model": model,
+        "prompt": prompt,
+        "temperature": temperature,
+    })
+
+
 async def generate_text_batch(
     prompts: Iterable[str],
     model: str,
@@ -208,10 +217,10 @@ async def generate_text_batch(
     seen = set()
     for i, key in enumerate(cache_keys):
         if key in seen:
-            with open("debug/{key}.txt", "w") as f:
+            with open(f"debug/{key}.txt", "w") as f:
                 f.write(prompts[i])
         seen.add(key)
-        
+
     # TODO key against cache key so it can be inserted after the fact?
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
     batch_requests = [

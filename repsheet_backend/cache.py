@@ -116,6 +116,12 @@ class GCSCache:
             return data
         except NotFound:
             return None
+        
+    def cache_key(self, key_obj: Any) -> str:
+        """
+        Returns the cache key used for a given object.
+        """
+        return cache_key(key_obj)[0]
 
     async def init(self):
         """Checks if we can connect to the bucket. Doesn't actually "initialize" anything per se."""

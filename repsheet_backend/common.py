@@ -161,7 +161,7 @@ class BillVotingRecord(BaseModel):
     billBecameLaw: bool
     billIsBudget: bool
     privateBillOfMember: bool
-    membersPartyVote: PartyVotes
+    percentageOfPartyWithSameVote: str
     issues: BillIssues
     memberInGovernment: bool
     memberInOpposition: bool

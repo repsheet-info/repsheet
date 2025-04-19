@@ -9,24 +9,22 @@ The input data is an array in this shape:
 ```ts
 interface BillVotingRecord {
   /** A short summary of the bill */
-  summary: string,
+  summary: string
   /** The ID of the bill, used to link to the bill when referencing it as a source */
-  billID: string,
+  billID: string
   /** The bill number, used to name a link to a bill when referencing it as a source */
-  billNumber: string,
+  billNumber: string
   /** How the member you are summarizing voted on this bill */
-  memberVote: 'yea' | 'nay' | 'abstain',
+  memberVote: 'yea' | 'nay' | 'abstain'
   /** Whether the bill received royal assent and became law in Canada */
-  billBecameLaw: boolean,
+  billBecameLaw: boolean
   /** Was this bill a private bill of the MP you are summarizing */
-  privateBillOfMember: boolean,
-  /** How the members of the party of the MP you are summarizing voted on this bill */
-  membersPartyVotes: {
-    yea: number,
-    nay: number,
-    abstain: number,
-    percentageYea: string
-  },
+  privateBillOfMember: boolean
+  /** What percentage of this MP's party voted the same way as them. 
+    * If this is a low percentage (< 50%) then it indicates that the member is voting against their party.
+    * Will be null if the member abstained.
+    */
+  percentageOfPartyWithSameVote: str | null
   /** Was the member in government at the time of the vote */
   memberInGovernment: boolean
   /** Was the member in opposition at the time of the vote */

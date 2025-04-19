@@ -160,6 +160,7 @@ async def anthropic_wait_for_batch(anthropic_batch_id: str, sleep: int = 30) -> 
 async def generate_text_batch(
     prompts: Iterable[str],
     model: str,
+    temperature: float = 1.0,
     output_tokens: Optional[int] = None,
 ) -> list[Optional[str]]:
     if not model.startswith("claude"):
@@ -176,6 +177,7 @@ async def generate_text_batch(
             "method": "generate_text",
             "model": model,
             "prompt": prompt,
+            "temperature": temperature,
         }
         for prompt in prompts
     ]
@@ -197,11 +199,12 @@ async def generate_text_batch(
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
     batch_requests = [
         Request(
-            custom_id=str(i),
+            custom_id=genai_cache.cache_key(cache_keys[i]),
             params=MessageCreateParamsNonStreaming(
                 model=model,
                 max_tokens=output_tokens,
                 messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
             ),
         )
         for i, prompt in enumerate(prompts)

@@ -2,7 +2,7 @@ import asyncio
 from repsheet_backend.common import LOCAL_MPS, PARTY_LEADERS
 from repsheet_backend.db import RepsheetDB
 from repsheet_backend.summarize_bills import summarize_bill
-from repsheet_backend.summarize_members import condense_member_summary, generate_member_summary
+from repsheet_backend.summarize_members import condense_member_summaries, generate_member_summary
 from repsheet_backend.genai import genai_cache
 
 
@@ -21,13 +21,13 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         all_member_ids =  (
-            # PARTY_LEADERS[0],
-            # LOCAL_MPS[0],
-            *PARTY_LEADERS,
-            *LOCAL_MPS,
+            PARTY_LEADERS[0],
+            LOCAL_MPS[1],
+            # *PARTY_LEADERS,
+            # *LOCAL_MPS,
             # adding random people for beta testing
-            "Len Webber (Calgary Confederation)",
-            "Kevin Vuong (Spadina—Fort York)",
+            # "Len Webber (Calgary Confederation)",
+            # "Kevin Vuong (Spadina—Fort York)",
         )
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = [
@@ -38,17 +38,14 @@ async def add_genai_summaries():
                 generate_member_summary(
                     voting_record, 
                     member_id, 
-                    # dump_prompts_to_path="./debug"
+                    dump_prompts_to_path="./debug"
                 )
                 for voting_record, member_id in zip(voting_records, all_member_ids)
             ]
         )
         db.insert_member_summaries(zip(all_member_ids, member_summaries))
 
-        condensed_summaries = await asyncio.gather(*[
-            condense_member_summary(summary)
-            for summary in member_summaries
-        ])
+        condensed_summaries = await condense_member_summaries(member_summaries)
         db.insert_short_member_summaries(
             zip(all_member_ids, condensed_summaries)
         )

@@ -122,16 +122,11 @@ async def generate_member_summary(
     merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
     # use the expensive model to merge them, as this is a small number of tokens,
     # and is also the final output so should be polished
-    merged_summary = await generate_text_batch(
-        [merge_summary_prompt], 
-        model=CLAUDE_SONNET,
-        temperature=0.0)
-    merged_summary = merged_summary[0]
-    # merged_summary = await generate_text(
-    #     merge_summary_prompt, 
-    #     model=CLAUDE_SONNET, 
-    #     temperature=0.0,
-    #     invalidate_cache=invalidate_cache)
+    merged_summary = await generate_text(
+        merge_summary_prompt, 
+        model=CLAUDE_SONNET, 
+        temperature=0.0,
+        invalidate_cache=invalidate_cache)
     assert merged_summary is not None
     
     broken_links = broken_bill_links(merged_summary, all_bill_ids)
@@ -174,7 +169,22 @@ async def generate_member_summary_batch(
             broken_links = broken_bill_links(new_summary, all_bill_ids)
             if len(broken_links) > 0:
                 raise ValueError(f"Found {len(broken_links)} broken bill links summary re-run with {CLAUDE_SONNET}")
-
+            
+    processed_summaries = []
+    for summary in summaries:
+        assert summary is not None
+        try:
+            validated = validate_member_summary(summary)
+        except Exception as e:
+            print(f"Validation failed, re-running with {CLAUDE_SONNET}...")
+            new_summary = await generate_text(
+                summary, 
+                model=CLAUDE_SONNET, 
+                temperature=0.0,
+            )
+            validated = validate_member_summary(new_summary)
+        processed_summaries.append(validated)
+        
     processed_summaries = [validate_member_summary(summary) for summary in summaries]
     merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
     # use the expensive model to merge them, as this is a small number of tokens,

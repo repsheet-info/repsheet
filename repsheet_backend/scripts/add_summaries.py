@@ -38,12 +38,12 @@ async def add_genai_summaries():
         # )
         all_member_ids = [member.id for member in db.get_current_members()]
         print(f"Summarizing {len(all_member_ids)} members")
-        voting_records = [
+        voting_records = (
             db.get_member_voting_record(member_id) for member_id in all_member_ids
-        ]
+        )
 
         if BATCH_MODE:
-            print(f"Summarizing {len(voting_records)} voting records in batch mode")
+            print(f"Summarizing voting records in batch mode")
             member_summaries = await asyncio.gather(
                 *[
                     generate_member_summary_batch(voting_record)

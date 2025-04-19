@@ -13,7 +13,7 @@ const linkedSummary = summary.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, 
 
   if(!thisBill) {
     // TODO - broken links
-    // throw new Error(`Bill with ID ${id} not found`);
+    throw new Error(`Bill with ID ${id} not found`);
   }
 
   return `<a href="/canada/bills/${id}/">${text}</a>`;

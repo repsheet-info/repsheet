@@ -66,6 +66,7 @@ const party = member['Political Affiliation']
 const mpBills = db.prepare('SELECT * FROM bills WHERE "Private Bill Sponsor Member ID" = ?').all(member['Member ID']);
 const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').all(member['Member ID']);
 
+const mpVotesFormatted = new Intl.NumberFormat('en-CA').format(mpVotes.length)
 ---
 
 <StarlightPage frontmatter={{ 
@@ -87,7 +88,7 @@ const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').a
       <dt>Party</dt>
       <dd><PartyBadge party={member['Political Affiliation']} /></dd>
       <dt>Votes cast</dt>
-      <dd>{mpVotes.length}</dd>
+      <dd>{mpVotesFormatted}</dd>
       <dt>Bills sponsored</dt>
       <dd>{mpBills.length}</dd>
     </dl>
@@ -118,6 +119,6 @@ const mpVotes = db.prepare('SELECT * FROM member_votes WHERE "Member ID" = ?').a
 
   .breakdown img {
     max-height: 400px;
-    width: 150px;
+    width: 140px;
   }
 </style>

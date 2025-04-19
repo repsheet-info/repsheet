@@ -1,0 +1,51 @@
+---
+// We don't want this component really, we want the full search bar.  That's 
+// caused a bit of trouble, so we're just going to copy this for now.
+---
+<br />
+<br />
+<button id="searchTrigger">Find your representative</button>
+<p>If you're unsure who your representative is, you can find them at <a href="https://www.ourcommons.ca/members/en" target="_blank">ourcommons.ca</a>.</p>
+
+<script>
+    // Client-side script
+    document.getElementById('searchTrigger')?.addEventListener('click', () => {
+        // Wait for next tick to ensure DOM is ready
+        // Astro docs say this isn't needed, but it seems to be for me and 
+        // we got a deadline to hit
+        setTimeout(() => {
+            const searchButton = document.querySelector('button[aria-label="Search"]') as HTMLButtonElement;
+            searchButton.click();
+        }, 0);
+    });
+</script>
+
+<style>
+    /* Copy of the LinkButton styles from Starlight */
+    button {
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 999rem;
+        display: inline-flex;
+        font-size: var(--sl-text-sm);
+        gap: 0.5em;
+		line-height: 1.1875;
+		outline-offset: 0.25rem;
+		padding: 0.4375rem 1.125rem;
+		text-decoration: none;
+		background: var(--sl-color-text-accent);
+		border-color: var(--sl-color-text-accent);
+		color: var(--sl-color-black);
+	}
+	button:hover {
+		color: var(--sl-color-black);
+	}
+
+	@media (min-width: 50rem) {
+		button {
+			font-size: var(--sl-text-base);
+			padding: 0.9375rem 1.25rem;
+		}
+	}
+}
+</style>

@@ -214,13 +214,6 @@ async def generate_text_batch(
     # inject the result into the cache post-hoc and re-run
     cache_keys = [genai_cache.cache_key(cache_key_obj) for cache_key_obj in cache_key_objs]
 
-    seen = set()
-    for i, key in enumerate(cache_keys):
-        if key in seen:
-            with open(f"debug/{key}.txt", "w") as f:
-                f.write(prompts[i])
-        seen.add(key)
-
     # TODO key against cache key so it can be inserted after the fact?
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
     batch_requests = [

@@ -155,7 +155,7 @@ async def generate_member_summary(
     return validate_member_summary(merged_summary)
 
 
-async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str], member_id: str, model: str) -> list[MemberSummary]:
+async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str], member_id: str, model: str) -> list[Optional[MemberSummary]]:
     """Attempts to fix broken bill links, and failed JSON validation"""
     summaries = await generate_text_batch(
         prompts,
@@ -190,7 +190,8 @@ async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str],
                 with open(output_file, "w") as f:
                     json.dump({ "broken_links": list(broken_links), "summary": summary }, f, indent=2)
                 print(f"Found {len(broken_links)} unpatched broken bill links in summary re-run with {CLAUDE_SONNET}, wrote to {output_file}")
-                                        
+                summary = None
+
             summaries[summary_i] = summary
 
     validated_summaries = []
@@ -212,10 +213,14 @@ async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str],
                     output_file = f"debug/validation/{member_id}-summary.json"
                     with open(output_file, "w") as f:
                         json.dump({ "error": str(e), "summary": new_summary, "cache_key": prompt_cache_key(prompt, model=CLAUDE_SONNET, temperature=0.0) }, f, indent=2)
-                    print(f"Validation failed again, wrote to {output_file}")
-                    raise e
+                    print(f"Validation failed with {CLAUDE_SONNET}, wrote to {output_file}")
+                    validated = None
             else:
-                raise e
+                output_file = f"debug/validation/{member_id}-summary.json"
+                with open(output_file, "w") as f:
+                    json.dump({ "error": str(e), "summary": summary, "cache_key": prompt_cache_key(prompt, model=CLAUDE_SONNET, temperature=0.0) }, f, indent=2)
+                print(f"Validation failed with {CLAUDE_SONNET}, wrote to {output_file}")
+                validated = None
         validated_summaries.append(validated)
 
     return validated_summaries  
@@ -223,18 +228,24 @@ async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str],
 
 async def generate_member_summary_batch(
         voting_record: list[BillVotingRecord], member_id: str
-) -> MemberSummary:
-    all_bill_ids = {vote.billID for vote in voting_record}
-    prompts = get_member_summarisation_prompts(voting_record)
-    sub_summaries = await run_member_summary_prompts(prompts, all_bill_ids, member_id, model=CLAUDE_HAIKU)
-    merge_summary_prompt = get_summary_merge_prompt(sub_summaries)
-    # use the expensive model to merge them, as this is a small number of tokens,
-    # and is also the final output so should be polished
-    merged_summary = await run_member_summary_prompts([merge_summary_prompt], all_bill_ids, member_id, model=CLAUDE_SONNET)
-    return merged_summary[0]
+) -> Optional[MemberSummary]:
+    try:
+        all_bill_ids = {vote.billID for vote in voting_record}
+        prompts = get_member_summarisation_prompts(voting_record)
+        sub_summaries = await run_member_summary_prompts(prompts, all_bill_ids, member_id, model=CLAUDE_HAIKU)
+        if any(summary is None for summary in sub_summaries):
+            return None
+        merge_summary_prompt = get_summary_merge_prompt(sub_summaries) # type: ignore
+        # use the expensive model to merge them, as this is a small number of tokens,
+        # and is also the final output so should be polished
+        merged_summary = await run_member_summary_prompts([merge_summary_prompt], all_bill_ids, member_id, model=CLAUDE_SONNET)
+        return merged_summary[0]
+    except Exception as e:
+        print(f"Error generating summary for {member_id}: {e}")
+        return None
     
 
-async def condense_member_summaries(full_summaries: list[MemberSummary]) -> list[str]:
+async def condense_member_summaries(full_summaries: Iterable[MemberSummary]) -> list[str]:
     """Generate a condensed version of the summary, which is more readable and less verbose."""
     prompts = [
         CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", full_summary.model_dump_json())
@@ -248,7 +259,7 @@ async def condense_member_summaries(full_summaries: list[MemberSummary]) -> list
     return condensed_summaries # type: ignore
 
 
-async def condense_member_summaries_batch(full_summaries: list[MemberSummary]) -> list[str]:
+async def condense_member_summaries_batch(full_summaries: Iterable[MemberSummary]) -> list[str]:
     """Generate a condensed version of the summary, which is more readable and less verbose."""
     prompts = [
         CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", full_summary.model_dump_json())

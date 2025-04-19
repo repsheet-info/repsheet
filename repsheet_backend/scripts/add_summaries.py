@@ -11,6 +11,10 @@ from repsheet_backend.summarize_members import (
 from repsheet_backend.genai import genai_cache
 
 BATCH_MODE = True
+assert BATCH_MODE, (
+    "the non batch-mode code has drifted heavily from the batch code at this point, "
+    "please add in all the various fixes or merge the two approaches together before turning this off"
+)
 
 
 async def add_genai_summaries():
@@ -57,17 +61,34 @@ async def add_genai_summaries():
                     for voting_record, member_id in zip(voting_records, all_member_ids)
                 ]
             )
-        db.insert_member_summaries(zip(all_member_ids, member_summaries))
+
+        # strip out failures
+        member_ids_and_summaries = [
+            (member_id, summary)
+            for member_id, summary in zip(all_member_ids, member_summaries)
+            if summary is not None
+        ]
+
+        db.insert_member_summaries(member_ids_and_summaries)
 
         if BATCH_MODE:
             condensed_summaries = await condense_member_summaries_batch(
-                member_summaries
+                summary for _, summary in member_ids_and_summaries
             )
         else:
-            condensed_summaries = await condense_member_summaries(member_summaries)
-        db.insert_short_member_summaries(zip(all_member_ids, condensed_summaries))
+            condensed_summaries = await condense_member_summaries(
+                summary for _, summary in member_ids_and_summaries
+            )
+        summarized_member_ids = [member_id for member_id, _ in member_ids_and_summaries]
+        db.insert_short_member_summaries(zip(summarized_member_ids, condensed_summaries))
 
         db.optimize()
+
+        failed_member_ids = set(all_member_ids) - set(summarized_member_ids)
+        if len(failed_member_ids) > 0:
+            print(f"Failed to summarize {len(failed_member_ids)} members:")
+            for member_id in failed_member_ids:
+                print(f"  {member_id}")
 
 
 if __name__ == "__main__":

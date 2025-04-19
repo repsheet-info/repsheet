@@ -65,7 +65,7 @@ We use Gemini Flash 2.0 as it can process a large amount of input text (1M token
 
 ## 3. MP summarization stage 1
 
-Model: <a href="https://www.anthropic.com/claude/haiku" target="_blank"  rel="noopener noreferrer">Claude Haiku</a>
+Model: <a href="https://www.anthropic.com/claude/haiku" target="_blank"  rel="noopener noreferrer">Claude Haiku</a> or <a href="https://www.anthropic.com/claude/sonnet" target="_blank"  rel="noopener noreferrer">Claude Sonnet</a>
 
 For each member, we take the summaries of the bills voted on when they were an MP, and combine them with:
 
@@ -81,7 +81,8 @@ You can view the prompt used for this step <a href="https://github.com/repsheet-
 
 You can view the code used to perform this step <a href="https://github.com/repsheet-info/repsheet/blob/main/repsheet_backend/summarize_members.py" target="_blank" rel="noopener noreferrer">here</a>.
 
-We use Claude Haiku as we found it provided high quality summaries and was fast and reasonably priced, as we need to run a large number of these summaries.
+We use Claude Haiku initially for each of these as we found it provided high quality summaries and was fast and reasonably priced, as we need to run a large number of these summaries.
+However, sometimes Haiku produced invalid JSON, or broken bill links, in which case we re-run the summary using Claude Sonnet, which is more expensive but produces higher quality summaries, and less prone to error.
 
 ## 4. MP summarization stage 2
 

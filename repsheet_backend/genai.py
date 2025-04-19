@@ -216,19 +216,25 @@ async def generate_text_batch(
 
     # TODO key against cache key so it can be inserted after the fact?
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
-    batch_requests = [
-        Request(
-            custom_id=cache_keys[i],
-            params=MessageCreateParamsNonStreaming(
-                model=model,
-                max_tokens=output_tokens,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-            ),
+    batch_requests = []
+    # Protect against duplicate prompts
+    seen_ids = set()
+    for prompt_i, prompt in enumerate(prompts):
+        custom_id = cache_keys[prompt_i]
+        if prompt_i in results.keys() or custom_id in seen_ids:
+            continue
+        seen_ids.add(custom_id)
+        batch_requests.append(
+            Request(
+                custom_id=custom_id,
+                params=MessageCreateParamsNonStreaming(
+                    model=model,
+                    max_tokens=output_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,),
+            )
         )
-        for i, prompt in enumerate(prompts)
-        if i not in results.keys()
-    ]
+        
     async with api_semaphore:
         batch_resp = await asyncio.to_thread(anthropic.messages.batches.create,
             requests=batch_requests
@@ -237,7 +243,9 @@ async def generate_text_batch(
     print(f"Submitted batch ({batch_resp.id}) with {len(batch_requests)} requests using {model} (total {sum(len(prompt) for prompt in prompts)} chars)")
     batch_results = await anthropic_wait_for_batch(batch_resp.id)
     for result_key, result in batch_results.items():
-        result_i = next(i for i, key in enumerate(cache_keys) if key == result_key)
-        results[result_i] = result
-        await genai_cache.set(cache_key_objs[result_i], result)
+        for result_i, key in enumerate(cache_keys):
+            if key == result_key:
+                results[result_i] = result
+        await genai_cache.set(result_key, result)
+        
     return [results[i] for i in range(len(prompts))]

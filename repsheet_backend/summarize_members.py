@@ -196,7 +196,9 @@ async def run_member_summary_prompts(prompts: list[str], all_bill_ids: set[str],
 
     validated_summaries = []
     for prompt, summary in zip(prompts, summaries):
-        assert summary is not None
+        if summary is None:
+            validated_summaries.append(None)
+            continue
         try:
             validated = validate_member_summary(summary)
         except ValidationError as e:

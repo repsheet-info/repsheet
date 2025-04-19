@@ -40,8 +40,6 @@ async def add_genai_summaries():
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = (
             db.get_member_voting_record(member_id) for member_id in all_member_ids
-            # TODO URGENT temporarily exclude MPs where generated JSON is broken
-            if member_id not in ("Hedy Fry (Vancouver Centre)", "Lisa Hepfner (Hamilton Mountain)")
         )
 
         if BATCH_MODE:

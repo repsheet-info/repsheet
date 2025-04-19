@@ -20,6 +20,9 @@ A cache key can be either a string or a dictionary of attributes.
 If a dictionary is used, the key will be generated using cache_key to hash the object.
 """
 
+MAX_CONCURRENT_CACHE_REQUESTS = 32
+cache_semaphore = asyncio.Semaphore(MAX_CONCURRENT_CACHE_REQUESTS)
+
 
 def cache_key(key_obj: Any) -> tuple[str, bytes]:
     """
@@ -134,7 +137,8 @@ class GCSCache:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
             value: The value to store in the cache.
         """
-        await asyncio.to_thread(self._set_sync, key, value)
+        async with cache_semaphore:
+            await asyncio.to_thread(self._set_sync, key, value)
 
     def set_nowait(self, key: CacheKey, value: Any):
         asyncio.create_task(self.set(key, value))
@@ -145,7 +149,8 @@ class GCSCache:
         Args:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
-        return await asyncio.to_thread(self._get_sync, key)
+        async with cache_semaphore:
+            return await asyncio.to_thread(self._get_sync, key)
 
     async def has(self, key: CacheKey) -> bool:
         """Check if a key exists in the cache.
@@ -153,7 +158,8 @@ class GCSCache:
         Args:
             key: The key to use for the cache entry. If not a string, the key will be generated using cache_key.
         """
-        return await asyncio.to_thread(self._has_sync, key)
+        async with cache_semaphore:
+            return await asyncio.to_thread(self._has_sync, key)
 
     def cache_async_function(self, get_key: Optional[Callable] = None):
         """Decorator to cache the return value of an async function.

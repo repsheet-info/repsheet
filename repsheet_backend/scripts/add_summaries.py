@@ -28,8 +28,8 @@ async def add_genai_summaries():
         db.insert_bill_summaries(bill_summaries_by_id)
 
         # all_member_ids = (
-            # PARTY_LEADERS[0],
-            # LOCAL_MPS[0],
+        # PARTY_LEADERS[0],
+        # LOCAL_MPS[0],
         # *PARTY_LEADERS,
         # *LOCAL_MPS,
         # adding random people for beta testing
@@ -43,6 +43,7 @@ async def add_genai_summaries():
         ]
 
         if BATCH_MODE:
+            print(f"Summarizing {len(voting_records)} voting records in batch mode")
             member_summaries = await asyncio.gather(
                 *[
                     generate_member_summary_batch(voting_record)

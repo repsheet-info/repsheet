@@ -146,7 +146,8 @@ def summarize_batch_counts(counts: MessageBatchRequestCounts) -> str:
 
 async def anthropic_wait_for_batch(anthropic_batch_id: str, sleep: int = 60) -> dict[str, str]:
     while True:
-        batch_resp = await asyncio.to_thread(anthropic.messages.batches.retrieve, anthropic_batch_id)
+        async with api_semaphore:
+            batch_resp = await asyncio.to_thread(anthropic.messages.batches.retrieve, anthropic_batch_id)
         if batch_resp.processing_status == "ended":
             break
         print(f"Batch {anthropic_batch_id} is still processing ({summarize_batch_counts(batch_resp.request_counts)})")
@@ -219,9 +220,10 @@ async def generate_text_batch(
         for i, prompt in enumerate(prompts)
         if i not in results.keys()
     ]
-    batch_resp = anthropic.messages.batches.create(
-        requests=batch_requests
-    )
+    async with api_semaphore:
+        batch_resp = await asyncio.to_thread(anthropic.messages.batches.create,
+            requests=batch_requests
+        )
 
     print(f"Submitted batch ({batch_resp.id}) with {len(batch_requests)} requests using {model} (total {sum(len(prompt) for prompt in prompts)} chars)")
     batch_results = await anthropic_wait_for_batch(batch_resp.id)

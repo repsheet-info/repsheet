@@ -607,29 +607,29 @@ class RepsheetDB:
     def get_member_voting_record(self, member_id: str) -> list[BillVotingRecord]:
         rows = self.db.execute(MEMBER_BILL_VOTING_QUERY, {"member_id": member_id}).fetchall()
         voting_record: list[BillVotingRecord] = []
-        member_party = set(row["member_party"] for row in rows)
-        assert (
-            len(member_party) == 1
-        ), f"Found multiple parties for member {member_id}: {member_party}"
-        member_party = member_party.pop()
         for row in rows:
             full_summary = BillSummary.model_validate_json(row["full_summary"])
             voted = row["voted"].lower() if row["voted"] else "abstain"
             voting_by_party = self.get_voting_stats(row["vote_id"])
+            member_party = row["member_party"]
             member_party_votes = next(party_votes for party, party_votes in voting_by_party if party == member_party)
-            if member_party_votes is None:
+            if member_party.lower().startswith("independent"):
+                member_party_vote_pct = "N/A (independent candidate)"
+            elif member_party_votes is None:
                 raise ValueError(f"Failed to find party votes for {member_party} in {voting_by_party}")
-            if voted == "abstain":
+            elif voted == "abstain":
                 member_party_vote_pct = None
             elif voted == "yea":
-                member_party_vote_pct = member_party_votes.yea / (
+                member_party_vote_ratio = member_party_votes.yea / (
                     member_party_votes.yea + member_party_votes.nay
                 )
+                member_party_vote_pct = f"{member_party_vote_ratio:.0%}"
             else:
                 assert voted == "nay"
-                member_party_vote_pct = member_party_votes.nay / (
+                member_party_vote_ratio = member_party_votes.nay / (
                     member_party_votes.yea + member_party_votes.nay
                 )
+                member_party_vote_pct = f"{member_party_vote_ratio:.0%}"
             voting_record.append(
                 BillVotingRecord(
                     summary=full_summary.summary,
@@ -637,7 +637,7 @@ class RepsheetDB:
                     billNumber=row["bill_number"],
                     billBecameLaw=row["became_law"],
                     memberVote=voted,
-                    percentageOfPartyWithSameVote=f"{member_party_vote_pct:.0%}",
+                    percentageOfPartyWithSameVote=member_party_vote_pct,
                     issues=full_summary.issues,
                     privateBillOfMember=bool(row["is_sponsor"]),
                     billIsBudget=bool(row["is_budget"]),

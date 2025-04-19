@@ -89,10 +89,6 @@ async def generate_member_summary(
         dump_prompts_to_path: Optional[str] = None) -> MemberSummary:
     all_bill_ids = {vote.billID for vote in voting_record}
     prompts = get_member_summarisation_prompts(voting_record)
-    # summaries = await generate_text_batch(
-    #     prompts,
-    #     model=CLAUDE_HAIKU,
-    # )
     summaries = await asyncio.gather(*[
         generate_text(
             prompt, 
@@ -126,12 +122,16 @@ async def generate_member_summary(
     merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
     # use the expensive model to merge them, as this is a small number of tokens,
     # and is also the final output so should be polished
-    # merged_summary = (await generate_text_batch([merge_summary_prompt], model=CLAUDE_SONNET))[0]
-    merged_summary = await generate_text(
-        merge_summary_prompt, 
-        model=CLAUDE_SONNET, 
-        temperature=0.0,
-        invalidate_cache=invalidate_cache)
+    merged_summary = await generate_text_batch(
+        [merge_summary_prompt], 
+        model=CLAUDE_SONNET,
+        temperature=0.0)
+    merged_summary = merged_summary[0]
+    # merged_summary = await generate_text(
+    #     merge_summary_prompt, 
+    #     model=CLAUDE_SONNET, 
+    #     temperature=0.0,
+    #     invalidate_cache=invalidate_cache)
     assert merged_summary is not None
     
     broken_links = broken_bill_links(merged_summary, all_bill_ids)
@@ -148,11 +148,73 @@ async def generate_member_summary(
     return validate_member_summary(merged_summary)
 
 
-async def condense_member_summary(full_summary: MemberSummary) -> str:
-    """Generate a condensed version of the summary, which is more readable and less verbose."""
-    prompt = CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace(
-        "{{RAW_INPUT_DATA}}", full_summary.model_dump_json()
+async def generate_member_summary_batch(
+        voting_record: list[BillVotingRecord]
+) -> MemberSummary:
+    all_bill_ids = {vote.billID for vote in voting_record}
+    prompts = get_member_summarisation_prompts(voting_record)
+    summaries = await generate_text_batch(
+        prompts,
+        model=CLAUDE_HAIKU,
+        temperature=0.0,
     )
-    condensed_summary = await generate_text(prompt, model=CLAUDE_SONNET)
-    assert condensed_summary is not None
-    return condensed_summary
+
+    for summary_i, summary in enumerate(summaries):
+        assert summary is not None
+        broken_links = broken_bill_links(summary, all_bill_ids)
+        if len(broken_links) > 0:
+            print(f"Found {len(broken_links)} broken bill links in {CLAUDE_HAIKU} summary ({broken_links}), regenerating with {CLAUDE_SONNET}...")
+            # We don't batch here or this whole process will be three batches long - could take ages
+            new_summary = await generate_text(
+                prompts[summary_i], 
+                model=CLAUDE_SONNET, 
+                temperature=0.0,
+            )
+            assert new_summary is not None
+            broken_links = broken_bill_links(new_summary, all_bill_ids)
+            if len(broken_links) > 0:
+                raise ValueError(f"Found {len(broken_links)} broken bill links summary re-run with {CLAUDE_SONNET}")
+
+    processed_summaries = [validate_member_summary(summary) for summary in summaries]
+    merge_summary_prompt = get_summary_merge_prompt(processed_summaries)
+    # use the expensive model to merge them, as this is a small number of tokens,
+    # and is also the final output so should be polished
+    merged_summary = await generate_text_batch(
+        [merge_summary_prompt], 
+        model=CLAUDE_SONNET,
+        temperature=0.0)
+    merged_summary = merged_summary[0]
+    assert merged_summary is not None
+    
+    broken_links = broken_bill_links(merged_summary, all_bill_ids)
+    if len(broken_links) > 0:
+        raise ValueError(f"Found {len(broken_links)} broken bill links in merged summary run with {CLAUDE_SONNET}")
+
+    assert merged_summary is not None
+    return validate_member_summary(merged_summary)
+
+
+
+async def condense_member_summaries(full_summaries: list[MemberSummary]) -> list[str]:
+    """Generate a condensed version of the summary, which is more readable and less verbose."""
+    prompts = [
+        CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", full_summary.model_dump_json())
+        for full_summary in full_summaries
+    ]
+    condensed_summaries = await asyncio.gather(*[
+        generate_text(prompt, model=CLAUDE_SONNET, temperature=0.0)
+        for prompt in prompts
+    ])
+    assert all(summary is not None for summary in condensed_summaries)
+    return condensed_summaries # type: ignore
+
+
+async def condense_member_summaries_batch(full_summaries: list[MemberSummary]) -> list[str]:
+    """Generate a condensed version of the summary, which is more readable and less verbose."""
+    prompts = [
+        CONDENSE_SUMMARY_PROMPT_TEMPLATE.replace("{{RAW_INPUT_DATA}}", full_summary.model_dump_json())
+        for full_summary in full_summaries
+    ]
+    condensed_summaries = await generate_text_batch(prompts, model=CLAUDE_SONNET, temperature=0.0)
+    assert all(summary is not None for summary in condensed_summaries)
+    return condensed_summaries # type: ignore

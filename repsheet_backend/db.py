@@ -91,9 +91,9 @@ SELECT
     v.[Vote ID] AS [Vote ID],
     SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) AS [Yea],
     SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) AS [Nay],
-    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
-    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
-    SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
 FROM {VOTES_HELD_TABLE} AS v
 JOIN {MEMBER_VOTES_TABLE} AS mv
     ON v.[Vote ID] = mv.[Vote ID]
@@ -109,9 +109,9 @@ SELECT
     SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) AS [Yea],
     SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) AS [Nay],
     SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) AS [Paired],
-    SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
-    SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
-    SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Yea' THEN 1 ELSE 0 END) / COUNT(*) AS [Yea Percentage],
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Nay' THEN 1 ELSE 0 END) / COUNT(*) AS [Nay Percentage],
+    1.0 * SUM(CASE WHEN mv.[Member Voted] = 'Paired' THEN 1 ELSE 0 END) / COUNT(*) AS [Paired Percentage]
 FROM {VOTES_HELD_TABLE} AS v
 JOIN {MEMBER_VOTES_TABLE} AS mv
     ON v.[Vote ID] = mv.[Vote ID]

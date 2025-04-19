@@ -140,20 +140,21 @@ def summarize_batch_counts(counts: MessageBatchRequestCounts) -> str:
         result += f"{counts.errored} errored, "
     if counts.expired > 0:
         result += f"{counts.expired} expired, "
-    result += f"{counts.succeeded} succeeded ({total} total)"
+    result += f"{counts.succeeded} succeeded, {total} total"
     return result
 
 
-async def anthropic_wait_for_batch(anthropic_batch_id: str, sleep: int = 30) -> dict[int, str]:
+async def anthropic_wait_for_batch(anthropic_batch_id: str, sleep: int = 60) -> dict[str, str]:
     while True:
         batch_resp = await asyncio.to_thread(anthropic.messages.batches.retrieve, anthropic_batch_id)
         if batch_resp.processing_status == "ended":
             break
         print(f"Batch {anthropic_batch_id} is still processing ({summarize_batch_counts(batch_resp.request_counts)})")
         await asyncio.sleep(sleep)
+    print(f"Batch {anthropic_batch_id} is finished ({summarize_batch_counts(batch_resp.request_counts)})")
     result = {}
     for message in await asyncio.to_thread(anthropic.messages.batches.results, anthropic_batch_id):
-        result[int(message.custom_id)] = message.result.content[0].text # type: ignore
+        result[message.custom_id] = message.result.message.content[0].text # type: ignore
     return result
 
 
@@ -172,7 +173,7 @@ async def generate_text_batch(
             raise ValueError("Prompt contains unresolved template variables")
     
     results: dict[int, Optional[str]] = {}
-    cache_keys = [
+    cache_key_objs = [
         {
             "method": "generate_text",
             "model": model,
@@ -182,24 +183,32 @@ async def generate_text_batch(
         for prompt in prompts
     ]
     cached_responses = await asyncio.gather(*[
-        genai_cache.get(cache_key) for cache_key in cache_keys
+        genai_cache.get(cache_key_obj) for cache_key_obj in cache_key_objs
     ])
     for i, cached_response in enumerate(cached_responses):
         if cached_response is None:
             # No way to distinguish between a cache miss and a cached None value
             # so we have to check if the cache key exists.
             # Parallelize this if it becomes a bottle-neck
-            is_cached_none = await genai_cache.has(cache_keys[i])
+            is_cached_none = await genai_cache.has(cache_key_objs[i])
             if is_cached_none:
                 results[i] = None
         else:
             results[i] = cached_response
 
+    if all(i in results.keys() for i in range(len(prompts))):
+        # All prompts are cached
+        return [results[i] for i in range(len(prompts))]
+
+    # we use the cache key as the ID if we fail waiting on the job we can 
+    # inject the result into the cache post-hoc and re-run
+    cache_keys = [genai_cache.cache_key(cache_key_obj) for cache_key_obj in cache_key_objs]
+
     # TODO key against cache key so it can be inserted after the fact?
     output_tokens = output_tokens or MAX_OUTPUT_TOKENS[model]  
     batch_requests = [
         Request(
-            custom_id=genai_cache.cache_key(cache_keys[i]),
+            custom_id=cache_keys[i],
             params=MessageCreateParamsNonStreaming(
                 model=model,
                 max_tokens=output_tokens,
@@ -216,7 +225,8 @@ async def generate_text_batch(
 
     print(f"Submitted batch ({batch_resp.id}) with {len(batch_requests)} requests using {model} (total {sum(len(prompt) for prompt in prompts)} chars)")
     batch_results = await anthropic_wait_for_batch(batch_resp.id)
-    for i, result in batch_results.items():
-        results[i] = result
-        await genai_cache.set(cache_keys[i], result)
+    for result_key, result in batch_results.items():
+        result_i = next(i for i, key in enumerate(cache_keys) if key == result_key)
+        results[result_i] = result
+        await genai_cache.set(cache_key_objs[result_i], result)
     return [results[i] for i in range(len(prompts))]

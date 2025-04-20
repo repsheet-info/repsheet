@@ -38,7 +38,12 @@ MANUAL_ENTRIES = {
     "Ryan Turnbull (Whitby)": "TurnbullRyan_CPC.jpg",
     "Dave MacKenzie (Oxford)": "MacKenzieDavid_CPC.jpg",
     "Pablo Rodriguez (Honoré-Mercier)": "RodriguezPablo_Lib.jpg",
-    "Harjit S. Sajjan (Vancouver South)": "SajjanHarjit_Lib.jpg"
+    "Harjit S. Sajjan (Vancouver South)": "SajjanHarjit_Lib.jpg",
+    "Marie-Claude Bibeau (Compton—Stanstead)": "BibeauMarie-Claude_Lib.jpg",
+    "Yves-François Blanchet (Beloeil—Chambly)": "BlanchetYves-Fran%C3%A7ois_BQ.jpg",
+    "Maxime Blanchette-Joncas (Rimouski-Neigette—Témiscouata—Les Basques)": "Blanchette-JoncasMaxime_BQ.jpg",
+    "Alexis Brunelle-Duceppe (Lac-Saint-Jean)": "Brunelle-DuceppeAlexis_BQ.jpg",
+    "Nathaniel Erskine-Smith (Beaches—East York)": "Erskine-SmithNathaniel_Lib.jpg",
 }
 
 def photo_url(mp: MemberInfo) -> str:
@@ -50,7 +55,7 @@ def photo_url(mp: MemberInfo) -> str:
     return f"https://www.ourcommons.ca/Content/Parliamentarians/Images/OfficialMPPhotos/44/{name}_{party}.jpg"
 
 def _download_photo(mp: MemberInfo) -> bool:
-    target_blob = f"photos/{mp.id}.jpg"
+    target_blob = f"photos/{mp.url_slug}.jpg"
     exists = image_bucket.blob(target_blob).exists()
     if exists:
         return True
@@ -86,6 +91,9 @@ async def main():
 
     if any(not success for success in successes):
         print("Some photos failed to download")
+        for member, success in zip(members, successes):
+            if not success:
+                print(f"Failed to download {member.id}")
         exit(1)
 
 if __name__ == "__main__":

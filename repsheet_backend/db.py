@@ -302,7 +302,7 @@ class RepsheetDB:
             lambda row: f"{row['First Name']} {row["Last Name"]} ({row["Constituency"]})", axis=1
         )
         members["Photo URL"] = members.apply(
-            lambda row: f"https://storage.googleapis.com/repsheet-images/photos/{row["Member ID"]}.jpg", axis=1
+            lambda row: f"https://storage.googleapis.com/repsheet-images/photos/{row['First Name']}_{row['Last Name']}.jpg", axis=1
         )
 
         self.db.execute(f"DROP TABLE IF EXISTS {MEMBERS_TABLE}")

@@ -195,3 +195,7 @@ class MemberInfo(BaseModel):
     first_name: str
     last_name: str
     party: str
+
+    @property
+    def url_slug(self) -> str:
+        return f"{self.first_name}_{self.last_name}"

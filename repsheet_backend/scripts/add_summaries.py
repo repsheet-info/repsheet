@@ -11,10 +11,6 @@ from repsheet_backend.summarize_members import (
 from repsheet_backend.genai import genai_cache
 
 BATCH_MODE = True
-assert BATCH_MODE, (
-    "the non batch-mode code has drifted heavily from the batch code at this point, "
-    "please add in all the various fixes or merge the two approaches together before turning this off"
-)
 
 
 async def add_genai_summaries():
@@ -35,8 +31,11 @@ async def add_genai_summaries():
         # *PARTY_LEADERS,
         # *LOCAL_MPS,
         # )
+        # all_member_ids = ["Heather McPherson (Edmonton Strathcona)"]
         
         all_member_ids = [member.id for member in db.get_current_members()]
+        assert len(all_member_ids) < 10 or BATCH_MODE
+
         print(f"Summarizing {len(all_member_ids)} members")
         voting_records = (
             db.get_member_voting_record(member_id) for member_id in all_member_ids

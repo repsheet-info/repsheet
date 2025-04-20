@@ -31,8 +31,8 @@ HOUSE_CHAMBER_ID = 1
 SENATE_CHAMBER_ID = 2
 REPSHEET_DB = "repsheet.sqlite"
 
-WITH_MOST_RECENT_VOTE_QUERY = f"""
-WITH most_recent_vote AS (
+MEMBER_BILL_VOTING_QUERY = f"""
+WITH most_recent_reading_vote AS (
 SELECT
     b.[Bill ID] AS bill_id,
     MAX(v.[Vote ID]) AS vote_id
@@ -41,14 +41,12 @@ JOIN {VOTES_HELD_TABLE} v
     ON mv.[Vote ID] = v.[Vote ID]
 JOIN {BILLS_TABLE} AS b
     ON v.[Bill ID] = b.[Bill ID]
-WHERE
+WHERE 
     mv.[Member ID] = :member_id
+AND v.[Vote Subject] LIKE "%reading%"
 GROUP BY
     b.[Bill ID]
 )
-"""
-MEMBER_BILL_VOTING_QUERY = f"""
-{WITH_MOST_RECENT_VOTE_QUERY}
 
 SELECT
     b.[Bill ID] AS bill_id,
@@ -65,17 +63,17 @@ SELECT
     p.[Supply-and-confidence] = mv.[Political Affiliation] AS is_in_supply_and_confidence,
     vs.[Yea Percentage] AS parliament_yea_percentage,
     pvs.[Yea Percentage] AS party_yea_percentage
-FROM most_recent_vote
+FROM most_recent_reading_vote mrrv
 JOIN {MEMBER_VOTES_TABLE} AS mv
-    ON most_recent_vote.vote_id = mv.[Vote ID]
+    ON mrrv.vote_id = mv.[Vote ID]
 JOIN {BILLS_TABLE} AS b
-    ON most_recent_vote.bill_id = b.[Bill ID]
+    ON mrrv.bill_id = b.[Bill ID]
 JOIN {PARLIAMENTS_TABLE} AS p
     ON b.[Parliament] = p.[Parliament]
 JOIN {VOTE_SUMMARY_TABLE} AS vs
-    ON most_recent_vote.vote_id = vs.[Vote ID]
+    ON mrrv.vote_id = vs.[Vote ID]
 JOIN {VOTE_PARTY_SUMMARY_TABLE} AS pvs
-    ON most_recent_vote.vote_id = pvs.[Vote ID] AND pvs.[Political Affiliation] = mv.[Political Affiliation]
+    ON mrrv.vote_id = pvs.[Vote ID] AND pvs.[Political Affiliation] = mv.[Political Affiliation]
 WHERE
     mv.[Member ID] = :member_id
 AND

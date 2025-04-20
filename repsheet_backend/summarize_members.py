@@ -210,11 +210,11 @@ async def validate_summary_regenerate_if_broken(
             print(
                 f"Found {len(broken_links)} broken bill links in {CLAUDE_HAIKU} summary ({broken_links}), regenerating with {CLAUDE_SONNET}..."
             )
-            new_summary = await generate_text(
-                prompt,
+            new_summary = (await generate_text_batch(
+                [prompt],
                 model=CLAUDE_SONNET,
                 temperature=0.0,
-            )
+            ))[0]
             assert new_summary is not None
             return await validate_summary_regenerate_if_broken(
                 prompt, new_summary, all_bill_ids, member_id, model=CLAUDE_SONNET
@@ -246,11 +246,11 @@ async def validate_summary_regenerate_if_broken(
     except ValidationError as e:
         if model == CLAUDE_HAIKU:
             print(f"Validation failed, re-running with {CLAUDE_SONNET}...")
-            new_summary = await generate_text(
-                prompt,
+            new_summary = (await generate_text_batch(
+                [prompt],
                 model=CLAUDE_SONNET,
                 temperature=0.0,
-            )
+            ))[0]
             assert new_summary is not None
             return await validate_summary_regenerate_if_broken(
                 prompt, new_summary, all_bill_ids, member_id, model=CLAUDE_SONNET

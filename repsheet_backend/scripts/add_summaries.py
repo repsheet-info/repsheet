@@ -31,7 +31,7 @@ async def add_genai_summaries():
         # *PARTY_LEADERS,
         # *LOCAL_MPS,
         # )
-        # all_member_ids = ["Heather McPherson (Edmonton Strathcona)"]
+        # all_member_ids = [PARTY_LEADERS[3]]
         
         all_member_ids = [member.id for member in db.get_current_members()]
         assert len(all_member_ids) < 10 or BATCH_MODE

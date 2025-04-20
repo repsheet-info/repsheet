@@ -63,10 +63,10 @@ PARTY_LEADERS = (
     "Pierre Poilievre (Carleton)",
     "Jagmeet Singh (Burnaby South)",
     "Yves-François Blanchet (Beloeil—Chambly)",
+    "Elizabeth May (Saanich—Gulf Islands)",
 )
 
 LOCAL_MPS = (
-    "Elizabeth May (Saanich—Gulf Islands)",
     "Laurel Collins (Victoria)",
 )
 

@@ -33,21 +33,22 @@ BATCH_COUNT = int(floor(200000 / 8192)) - 1
 # to allow for caching of AI responses
 RANDOM_SEED = 338
 
-BILL_REF_REGEX = re.compile(r"\[[A-Z]-\d+\]\((\d+-\d+-[A-Z]-\d+)\)")
+BILL_REF_REGEX = re.compile(r"\[[^\]]+\]\(([^\)]+)\)")
 
 MAX_REGENERATION_ATTEMPTS = 2
 
 # Even Claude Sonnet got these wrong. Validated manually by checking what bill was meant from context in the prompt.
 # TODO currently could cause a mismatch if a different error is made with the same result, should be tied to particular summaries somehow.
 BROKEN_LINK_MANUAL_FIXES = {
-    "44-1-S-232": "44-1-C-232",
-    "42-1-C-32": "44-1-C-32",
-    "44-1-C-378": "42-1-C-378",
-    "41-1-C-525": "41-2-C-525",
-    "42-1-C-332": "41-1-C-332",
-    "42-1-C-12": "43-2-C-12",
-    "44-1-C-204": "43-2-C-204",
-    "41-1-C-332": "44-1-C-332",
+    # old fixes
+    # "44-1-S-232": "44-1-C-232",
+    # "42-1-C-32": "44-1-C-32",
+    # "44-1-C-378": "42-1-C-378",
+    # "41-1-C-525": "41-2-C-525",
+    # "42-1-C-332": "41-1-C-332",
+    # "42-1-C-12": "43-2-C-12",
+    # "44-1-C-204": "43-2-C-204",
+    # "41-1-C-332": "44-1-C-332",
     "44-1-C-227": "42-1-C-227",
     "44-1-C-10": "43-2-C-10",
     "44-1-C-91": "42-1-C-91",
@@ -56,6 +57,10 @@ BROKEN_LINK_MANUAL_FIXES = {
     "44-1-C-262": "43-2-C-262",
     "42-1-C-269": "43-2-C-269",
 }
+
+EXTRA_MANUAL_FIXES = (
+    ("[Pension Protection Act](C-228)(44-1-C-228)", "[C-228](44-1-C-228)"),
+)
 
 os.makedirs("debug", exist_ok=True)
 os.makedirs("debug/broken_links", exist_ok=True)
@@ -196,6 +201,7 @@ async def generate_member_summary(
             f"{dump_prompts_to_path}/{member_id}/final-summary.txt",
             [(merge_summary_prompt, merged_summary)],
         )
+        print(f"{member_id} merge cache key: {prompt_cache_key(merge_summary_prompt, CLAUDE_SONNET, 0)}")
 
     assert merged_summary is not None
     return validate_member_summary(merged_summary)
@@ -227,6 +233,9 @@ async def validate_summary_regenerate_if_broken(
                 prompt, new_summary, all_bill_ids, member_id, model=CLAUDE_SONNET
             )
         else:
+            for fix_from, fix_to in EXTRA_MANUAL_FIXES:
+                summary = summary.replace(fix_from, fix_to)
+            
             broken_links = broken_bill_links(summary, all_bill_ids)
             for broken_link in list(broken_links):
                 if broken_link in BROKEN_LINK_MANUAL_FIXES:

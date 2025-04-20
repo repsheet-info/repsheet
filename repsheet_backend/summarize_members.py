@@ -201,7 +201,7 @@ async def generate_member_summary(
             f"{dump_prompts_to_path}/{member_id}/final-summary.txt",
             [(merge_summary_prompt, merged_summary)],
         )
-        print(f"{member_id} merge cache key: {prompt_cache_key(merge_summary_prompt, CLAUDE_SONNET, 0)}")
+        print(f"{member_id} merge cache key: {prompt_cache_key(merge_summary_prompt, CLAUDE_SONNET, 0.0)}")
 
     assert merged_summary is not None
     return validate_member_summary(merged_summary)
